@@ -1,0 +1,20 @@
+{
+  "name": "jotadevs/onze-plex-connector",
+  "version": "1.0.0",
+  "description": "This module allows sync products and stocks from OnzePlex ERP",
+  "type": "magento2-module",
+  "require": {
+    "magento/framework": "*"
+  },
+  "license": [
+    "Proprietary"
+  ],
+  "autoload": {
+    "files": [
+      "registration.php"
+    ],
+    "psr-4": {
+      "Jotadevs\\OnzePlexConnector\\": ""
+    }
+  }
+}
