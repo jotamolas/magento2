@@ -1,8 +1,6 @@
 <?php
 
-
 namespace Jotadevs\OnzePlexConnector\Model;
-
 
 class PlexProduct extends \Magento\Framework\Model\AbstractModel
 {

@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!--
+/**
+* Configuraciones por defecto del modulo
+*
+*/
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <payment>
+            <decidir_spsdecidir>
+                <active>0</active>
+                <model>Decidir\SpsDecidir\Model\Payment</model>
+                <title>Tarjeta de credito</title>
+                <mode>dev</mode>
+                <payment_action>order</payment_action> <!-- Habilita el metodo order() en el modelo del Payment-->
+                <order_status>processing</order_status>
+            </decidir_spsdecidir>
+        </payment>
+    </default>
+</config>

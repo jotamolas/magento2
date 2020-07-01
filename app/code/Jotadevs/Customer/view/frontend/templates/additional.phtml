@@ -1,0 +1,22 @@
+<div class="field tipo_doc required">
+    <label class="label" for="tipo_doc">
+        <span><?= $block->escapeHtml(__('Tipo de Documento')) ?></span>
+    </label>
+    <div class="control">
+        <select
+            name="tipo_doc" id="tipo_doc" title="<?= $block->escapeHtmlAttr(__('Tipo de Documento')) ?>"
+            class="input-text"
+            data-validate="{required:true}">
+        <?= $block->getda ?>
+        </select>
+
+    </div>
+</div>
+<div class="field doc required">
+    <label class="label" for="doc">
+        <span><?= $block->escapeHtml(__('Numero de Documento')) ?></span>
+    </label>
+    <div class="control">
+        <input type="text" name="doc" id="doc" value="" title="<?= $block->escapeHtmlAttr(__('Numero de Documento')) ?>" class="input-text" data-validate="{required:true}">
+    </div>
+</div>

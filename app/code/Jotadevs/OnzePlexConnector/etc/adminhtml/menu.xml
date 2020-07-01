@@ -1,7 +1,21 @@
 <?xml version="1.0"?>
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
     <menu>
-        <add id="Jotadevs_OnzePlexConnector::jotadevs" title="Jotadevs" translate="title" module="Jotadevs_OnzePlexConnector" parent="Magento_Backend::content" sortOrder="50" dependsOnModule="Jotadevs_OnzePlexConnector" resource="Jotadevs_OnzePlexConnector::jotadevs"/>
-        <add id="Jotadevs_OnzePlexConnector::jotadevs_onzeplex" title="Onze Plex" translate="title" module="Jotadevs_OnzePlexConnector" parent="Jotadevs_OnzePlexConnector::jotadevs" sortOrder="10" dependsOnModule="Jotadevs_OnzePlexConnector" action="plex/syncpage" resource="Jotadevs_OnzePlexConnector::jotadevs"/>
+        <add id="Jotadevs_OnzePlexConnector::menu"
+             title="JotaDevs"
+             module="Jotadevs_OnzePlexConnector"
+             sortOrder="10"
+             resource="Magento_Backend::content"
+             />
+        <add id="Jotadevs_OnzePlexConnector::menu_onzeplex"
+             title="Onze Plex Configuration"
+             module="Jotadevs_OnzePlexConnector"
+             sortOrder="10"
+             parent="Jotadevs_OnzePlexConnector::menu"
+             action="onzeplex/index/index"
+             resource="Jotadevs_OnzePlexConnector::menu_onzeplex"
+        />
     </menu>
-</config>
+ </config>
+
+

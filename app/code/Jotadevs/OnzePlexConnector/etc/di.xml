@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <type name="Magento\Framework\Console\CommandListInterface">
+        <arguments>
+            <argument name="commands" xsi:type="array">
+                <item name="jotadevs_onzeplexconnector_import_products" xsi:type="object">
+                    Jotadevs\OnzePlexConnector\Console\Command\ImportProducts
+                </item>
+                <item name="jotadevs_onzeplexconnector_test_external_api" xsi:type="object">
+                    Jotadevs\OnzePlexConnector\Console\Command\TestExternalApi
+                </item>
+                <item name="jotadevs_onzeplexconnector_import_rubros" xsi:type="object">
+                    Jotadevs\OnzePlexConnector\Console\ImportRubros
+                </item>
+            </argument>
+        </arguments>
+    </type>
+</config>

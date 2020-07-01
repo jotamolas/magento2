@@ -439,7 +439,7 @@ a {
                             max-width: 100%;
                             display: table-cell;
                             vertical-align: middle;
-                            float: none;
+                            float: left; /*change by jotadevs */
                             > img {
                                 display: block;
                                 margin: 0 auto;
@@ -557,9 +557,13 @@ a {
                     .block-search {
                         float: left;
                         padding-left: 0;
-                        position: relative;
+                        /*position: relative;*/
                         width: 250px;
-                        margin-left: 0;
+                        position: absolute; /* added by jotamolas */
+                        left: 0; /* added by jotamolas */
+                        right: 0;/* added by jotamolas */
+                        /*margin-left: 0;*/
+                        margin: 0 auto; /* added by jotamolas */
                         .field {
                             &.search {
                                 .control {
@@ -704,7 +708,7 @@ b, strong {
     padding: 7px 0;
     box-sizing: border-box;
     > a {
-        background: #ed629b;
+        background: #00B0C7; /* do by jotadevs #ed629b;*/
         color: #fff;
         border-radius: 50%;
         display: inline-block;
@@ -722,7 +726,7 @@ b, strong {
             color: #fff;
         }
         &:active, &:focus {
-            background: #ed629b;
+            background: #333333; /* do jotadevs #ed629b;*/
             color: #fff;
         }
     }
