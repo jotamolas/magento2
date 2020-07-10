@@ -11,7 +11,13 @@
                     Jotadevs\OnzePlexConnector\Console\Command\TestExternalApi
                 </item>
                 <item name="jotadevs_onzeplexconnector_import_rubros" xsi:type="object">
-                    Jotadevs\OnzePlexConnector\Console\ImportRubros
+                    Jotadevs\OnzePlexConnector\Console\Command\ImportRubros
+                </item>
+                <item name="jotadevs_onzeplexconnector_convert_plex_product" xsi:type="object">
+                    Jotadevs\OnzePlexConnector\Console\Command\ConvertPlexProduct
+                </item>
+                <item name="jotadevs_onzeplexconnector_convert_plex_rubros" xsi:type="object">
+                    Jotadevs\OnzePlexConnector\Console\Command\ConvertPlexRubros
                 </item>
             </argument>
         </arguments>

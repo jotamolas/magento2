@@ -7,7 +7,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ImportProducts extends Command
+class ConvertPlexRubros extends Command
 {
     private $onzeplexapi;
     public function __construct(OnzePlexApi $onzeplexapi)
@@ -15,14 +15,13 @@ class ImportProducts extends Command
         $this->onzeplexapi = $onzeplexapi;
         parent::__construct();
     }
-
     /**
      * @inheritDoc
      */
     protected function configure()
     {
-        $this->setName('jotadevs:op:import:products');
-        $this->setDescription('This command retrieve New products from ERP.');
+        $this->setName('jotadevs:op:convert:rubros');
+        $this->setDescription('Convierte Rubros de OnePlex en Categorias Magento');
         parent::configure();
     }
 
@@ -31,13 +30,14 @@ class ImportProducts extends Command
      *
      * @param InputInterface $input
      * @param OutputInterface $output
-     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     *
+     * @return void
      */
     protected function execute(InputInterface $input, OutputInterface $output): void
     {
-        $response =  $this->onzeplexapi->importFromPlex();
-        $output->writeln('Estado: ' . $response['state']);
-        $output->writeln('Productos Recibidos: ' . $response['received']);
-        $output->writeln('Nuevos: ' . $response['new']);
+        $response = $this->onzeplexapi->convertToMagentoCategory();
+        $output->writeln('Estado de Operación: ' . $response['state']);
+        $output->writeln('Catidad convertida: ' . $response['qty']);
+        $output->writeln($response['message']);
     }
 }

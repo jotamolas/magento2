@@ -1,6 +1,6 @@
 <?php
 
-namespace Jotadevs\OnzePlexConnector\Console\Command;
+namespace Jotadevs\OnzePlexConnector\Console;
 
 use Jotadevs\OnzePlexConnector\Model\OnzePlexApi;
 use Symfony\Component\Console\Command\Command;
@@ -20,7 +20,7 @@ class ImportRubros extends Command
      */
     protected function configure()
     {
-        $this->setName('jotadevs:op:import:rubros');
+        $this->setName('jotadevs:op:importrubros');
         $this->setDescription('This command import Categories and SubCategories from ERP Onze Plex');
         parent::configure();
     }
@@ -35,17 +35,10 @@ class ImportRubros extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): void
     {
-        $rubros = $this->onzeplexapi->importRubrosFromPlex();
-        $subrubros = $this->onzeplexapi->importSubRubrosFromPlex();
-        $output->writeln("Importacion de Rubros:");
-        $output->writeln("------->Estado: " . $rubros['state']);
-        $output->writeln("------->Recibidos: " . $rubros['received']);
-        $output->writeln("------->Nuevos:" . $rubros['new']);
-        $output->writeln("------->Mensaje:" . $rubros['message']);
-        $output->writeln("Importacion de Sub-Rubros:");
-        $output->writeln("------->Estado: " . $subrubros['state']);
-        $output->writeln("------->Recibidos: " . $subrubros['received']);
-        $output->writeln("------->Nuevos:" . $subrubros['new']);
-        $output->writeln("------->Mensaje:" . $subrubros['message']);
+       /* $rubros = $this->onzeplexapi->getRubrosOnexPlex();
+        var_dump($rubros);
+        $subrubros = $this->onzeplexapi->getSubRubrosOnexPlex();
+        var_dump($subrubros);*/
+        var_dump($this->onzeplexapi->testeandoCategorias());
     }
 }

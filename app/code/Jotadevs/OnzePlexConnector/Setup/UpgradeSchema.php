@@ -205,7 +205,7 @@ class UpgradeSchema implements \Magento\Framework\Setup\UpgradeSchemaInterface
                 'code'
             );
         }
-        if (version_compare($context->getVersion(), '1.0.6', '<')){
+        if (version_compare($context->getVersion(), '1.0.6', '<')) {
             $setup->getConnection()->dropColumn(
                 $setup->getTable('jotadevs_op_product'),
                 'code'
@@ -218,6 +218,42 @@ class UpgradeSchema implements \Magento\Framework\Setup\UpgradeSchemaInterface
                     'size' => 4,
                     'nullable' => false,
                     'comment' => 'Código de operacion'
+                ]
+            );
+        }
+        if (version_compare($context->getVersion(), '1.0.7', '<')) {
+            $setup->getConnection()->addColumn(
+                $setup->getTable('jotadevs_op_product'),
+                'id_magento',
+                [
+                    'type' => Table::TYPE_INTEGER,
+                    'nullable' => true,
+                    'comment' => 'Codigo del producto en Magento para tomar la trazabilidad'
+
+                ]
+            );
+            $setup->getConnection()->addColumn(
+                $setup->getTable('jotadevs_op_rubros'),
+                'id_magento',
+                [
+                    'type' => Table::TYPE_INTEGER,
+                    'nullable' => true,
+                    'comment' => 'Codigo de la Categoria en Magento para tomar la trazabilidad'
+
+                ]
+            );
+        }
+        if (version_compare($context->getVersion(), '1.0.8', '<')) {
+            $setup->getConnection()->addColumn(
+                $setup->getTable('jotadevs_op_product'),
+                'is_synchronized',
+                [
+                    'type' => Table::TYPE_BOOLEAN,
+                    'size' => null,
+                    'nullable' => false,
+                    'default' => false,
+                    'comment' => 'Informa si el producto esta sincronizado en Magento'
+
                 ]
             );
         }
