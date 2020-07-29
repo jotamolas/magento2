@@ -260,7 +260,6 @@ return [
         'Dotdigitalgroup_Chat' => 1,
         'Hidden_Apparel' => 1,
         'Hidden_Base' => 1,
-        'Jotadevs_Customer' => 1,
         'Jotadevs_OnzePlexConnector' => 1,
         'Klarna_Core' => 1,
         'Klarna_Ordermanagement' => 1,

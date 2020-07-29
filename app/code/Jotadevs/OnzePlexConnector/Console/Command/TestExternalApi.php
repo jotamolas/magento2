@@ -41,7 +41,7 @@ class TestExternalApi extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): void
     {
-        $response = $this->externalApi->importFromPlex();
+        $response = $this->externalApi->importGruposFromPlex();
         var_dump($response);
         //$output->writeln("quesiio");
     }

@@ -3,7 +3,6 @@
 namespace Jotadevs\OnzePlexConnector\Model;
 
 use Magento\Catalog\Api\CategoryRepositoryInterface;
-use Magento\Catalog\Api\Data\CategoryInterface;
 use Magento\Catalog\Api\Data\CategoryInterfaceFactory;
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Api\Data\ProductInterfaceFactory;
@@ -162,7 +161,57 @@ class OnzePlexApi
             ];
         }
     }
-    public function importFromPlex()
+    public function getGruposPlex()
+    {
+        $this->zendClient->resetParameters();
+        //var_dump($parameters);
+        try {
+            $this->zendClient->setUri($this->uriProd . "ec_getgrupos");
+            $this->zendClient->setMethod(ZendClient::GET);
+            $this->zendClient->setAuth($this->userProd, $this->passwordProd);
+            $this->zendClient->setHeaders(['Content-Type' => 'application/json']);
+
+            $response = $this->zendClient->request();
+            $response_array = $this->json->unserialize($response->getBody());
+            return [
+                'state' => 'success',
+                'result' => $response_array['response']['content']['grupos']
+            ];
+        } catch (\Zend_Http_Client_Exception $e) {
+            return [
+                'state' => 'error',
+                'code' => $e->getCode(),
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+    public function getPromotionsPlex()
+    {
+        $this->zendClient->resetParameters();
+        //var_dump($parameters);
+        try {
+            $this->zendClient->setUri($this->uriProd . "ec_getpromociones");
+            $this->zendClient->setMethod(ZendClient::GET);
+            $this->zendClient->setAuth($this->userProd, $this->passwordProd);
+            $this->zendClient->setHeaders(['Content-Type' => 'application/json']);
+
+            $response = $this->zendClient->request();
+            $response_array = $this->json->unserialize($response->getBody());
+            return $response_array;
+            /*return [
+                'state' => 'success',
+                'result' => $response_array['response']['content']['subrubros']
+            ];*/
+        } catch (\Zend_Http_Client_Exception $e) {
+            /*return [
+                'state' => 'error',
+                'code' => $e->getCode(),
+                'message' => $e->getMessage()
+            ];*/
+            return "error";
+        }
+    }
+    public function importProductsFromPlex()
     {
         //llamamos a la RestApi del Erp y traemos TODOS los productos.
         $result = $this->getProductsOnexPlex();
@@ -192,6 +241,7 @@ class OnzePlexApi
                             ($key == 'subrubro') ? $op_product->setSubrubro($value) : null;
                             ($key == 'idrubro') ? $op_product->setIdrubro($value) : null;
                             ($key == 'idSubro') ? $op_product->setIdrubro($value) : null;
+                            ($key == 'stock') ? $op_product->setStock($value) : null;
                         }
                         $op_product->setIsObjectNew(true);
                         $op_product->save();
@@ -356,58 +406,132 @@ class OnzePlexApi
             ];
         }
     }
+    public function importGruposFromPlex()
+    {
+        //llamamos a la RestApi del Erp y traemos TODOS los grupos.
+        $gruposApi = $this->getGruposPlex();
+        $operation = $this->plexoperation->create()
+            ->setName("Obtener Grupos desde OnzePlex")
+            ->setCode("GGOP");
+        //si hay resultados de rubros proseguimos
+        if ($gruposApi['state'] == 'success') {
+            if (!empty($gruposApi['result'])) {
+                $op_grupos = [];
+                //recorro el array de rubros para analizar si ya lo tengo en base
+                foreach ($gruposApi['result'] as $op_api_grupo) {
+                    //verifico si no existe ya en la tabla de op
+                    //VER ESTO
+                    $op_category = $this->plexcategory->create();
+                    $op_category_collection = $this->plexcategory->create()->getCollection();
+                    $op_category_collection
+                        ->addFieldToFilter('is_plex_group', ['eq' => true])
+                        ->addFieldToFilter('id_plex', ['eq' => $op_api_grupo['idgrupo']])
+                        ->load();
+                    $items = $op_category_collection->toArray();
+                    if (empty($items['items'])) {
+                        //si no existe lo cargo de vuelta
+                        foreach ($op_api_grupo as $key => $value) {
+                            ($key == 'idgrupo') ? $op_category->setIdPlex($value) : null;
+                            ($key == 'grupo') ? $op_category->setName($value) : null;
+                        }
+                        $op_category->setIsChild(true);
+                        $op_category->setIsPlexGroup(true);
+                        $op_category->setIsObjectNew(true);
+                        $op_category->save();
+                        $op_grupos[] = $op_category;
+                    }
+                }
+                $operation
+                     ->setMessage(
+                         "Estado de importacion: Success, Sub Rubros recibidos:" .
+                         count($gruposApi['result']) . " Nuevos:" . count($op_grupos)
+                     )->setLastId()
+                     ->setIsObjetNew(true)
+                     ->save();
+                return [
+                    'state' => 'success',
+                    'received' => count($gruposApi['result']),
+                    'new' => count($op_grupos)
+                ];
+            } else {
+                $operation
+                    ->setMessage("Estado de importacion: Success, Subrubros recibidos: 0 Nuevos: 0")
+                    ->setIsObjetNew(true)
+                    ->save();
+                return[
+                    'state' => 'success',
+                    'received' => 0,
+                    'new' => 0
+                ];
+            }
+        } else {
+            $operation->setMessage("Estado de importacion: Error, Mensaje de Error:" . $gruposApi['message']);
+            $operation->setIsObjetNew(true);
+            $operation->save();
+            return [
+                'state' => 'error',
+                'message' => $gruposApi['message']
+            ];
+        }
+    }
     public function convertToMagentoProduct()
     {
         //seteo operacion
         $operation = $this->plexoperation->create()->setName("Convertir Productos desde OnzePlex a Magento");
-        //obtener ultimo id convertido
-        $last_operation_collection = $this->plexoperation->create()->getCollection();
-        $last_operation_collection
-            ->addFieldToFilter('code', ['eq' => 'CNTM']);
-        if (empty($last_operation_collection->getColumnValues('last_id'))) {
-            $last_id = 0;
-        } else {
-            $last_id = max($last_operation_collection->getColumnValues('last_id'));
-        }
-        //var_dump($last_id);
-        //Busco todos los productos obtenidos en OnexPlex pero filtrando desde el ultimo que se importó
+        //Busco todos los productos obtenidos en OnexPlex filtrando por los no sincronizados
         $new_op_products_collection = $this->plexproduct->create()->getCollection();
         $new_op_products_collection
-            ->addFieldToFilter('id', ['gt' => $last_id])
-            //->addFieldToFilter('rubro', ['eq' => 'Accesorios'])
-            //->setPageSize(20)
-            //->setCurPage(1)
+            ->addFieldToFilter('is_synchronized', ['eq' => false])
             ->load();
-        $new_last_id = max($new_op_products_collection->getColumnValues('id'));
-        //seteo area de ejecuccion como global front y backend
-        $this->state->setAreaCode(\Magento\Framework\App\Area::AREA_GLOBAL);
-        /** los convierto a productos magento
-         *  recorro los nuevos productos obtenidos y por cada uno los inserto
-        */
-        foreach ($new_op_products_collection as $new_op_product) {
-            /** @var ProductInterface $mag_product */
-            $mag_product = $this->productFactory->create();
-            $mag_product->setSku($new_op_product->getSku())
-                ->setName($new_op_product->getProducto())
-                ->setTypeId(\Magento\Catalog\Model\Product\Type::TYPE_SIMPLE)
-                ->setVisibility(4)
-                ->setAttributeSetId(4)
-                ->setPrice($new_op_product->getPrecio())
-                ->setStatus(\Magento\Catalog\Model\Product\Attribute\Source\Status::STATUS_ENABLED);
-            $mag_product = $this->productRepository->save($mag_product);
-            $stockItem = $this->stockRegistry->getStockItemBySku($mag_product->getSku());
-            $stockItem->setIsInStock(true)->setQty($new_op_product->getStock());
+        //Verifico que existan productos Plex en la tabla
+        if (!empty($new_op_products_collection->getColumnValues('id'))) {
+            $new_last_id = max($new_op_products_collection->getColumnValues('id'));
+            //seteo area de ejecuccion como global front y backend
+            $this->state->setAreaCode(\Magento\Framework\App\Area::AREA_GLOBAL);
+            /** los convierto a productos magento
+             *  recorro los nuevos productos obtenidos y por cada uno los inserto
+             */
+            foreach ($new_op_products_collection as $new_op_product) {
+                /** @var ProductInterface $mag_product */
+                $mag_product = $this->productFactory->create();
+                $mag_product->setSku($new_op_product->getSku())
+                    ->setName($new_op_product->getProducto())
+                    ->setTypeId(\Magento\Catalog\Model\Product\Type::TYPE_SIMPLE)
+                    ->setVisibility(4)
+                    ->setAttributeSetId(4)
+                    ->setPrice($new_op_product->getPrecio())
+                    ->setStatus(\Magento\Catalog\Model\Product\Attribute\Source\Status::STATUS_ENABLED);
+                $mag_product = $this->productRepository->save($mag_product);
+
+                $stockItem = $this->stockRegistry->getStockItemBySku($mag_product->getSku());
+                $stockItem->setIsInStock(true)->setQty($new_op_product->getStock());
+                $stockItem->save();
+                $new_op_product->setIdMagento($mag_product->getId())
+                    ->setIsSynchronized(true)
+                    ->save();
+                //TODO ---> meter los productos en la categoria que seran los grupos.
+            }
+            $operation
+                ->setMessage(
+                    "Estado de importacion: Success, Cantidad Convertida:"
+                    . count($new_op_products_collection)
+                )
+                ->setCode('CNTM')
+                ->setLastId($new_last_id);
+            $operation->setIsObjetNew(true);
+            $operation->save();
+            return [
+                'state' => 'success',
+                'qty' => count($new_op_products_collection),
+                'message' => "somethig are converted"
+            ];
+        } else {
+            return [
+                'state' => 'success',
+                'qty' => count($new_op_products_collection),
+                'message' => 'nothing for convert'
+            ];
         }
-        $operation
-            ->setMessage("Estado de importacion: Success, Cantidad Convertida:" . count($new_op_products_collection))
-            ->setCode('CNTM')
-            ->setLastId($new_last_id);
-        $operation->setIsObjetNew(true);
-        $operation->save();
-        return [
-            'state' => 'success',
-            'qty' => count($new_op_products_collection)
-        ];
     }
     public function convertToMagentoCategory()
     {
@@ -426,14 +550,16 @@ class OnzePlexApi
             //seteo area de ejecuccion como global front y backend
             $this->state->setAreaCode(\Magento\Framework\App\Area::AREA_GLOBAL);
             /** los convierto a Categorias Magento
-             *  recorro los nuevos productos obtenidos y por cada uno los inserto
+             *  recorro los nuevos rubros obtenidos y por cada uno los inserto
              */
+
             foreach ($new_op_category_collection as $new_op_category) {
-                /** @var CategoryInterface $mag_product */
                 $mag_category = $this->categoryFactory->create();
                 $mag_category->setName($new_op_category->getName())
                     ->setIsActive(true);
-                if ($new_op_category->getIsChild()) {
+                if ($new_op_category->getIsPlexGroup()) {
+                    $mag_category->setLevel(4);
+                } elseif ($new_op_category->getIsChild()) {
                     $parent_plex_category = $this->plexcategory->create();
                     $parent_plex_category->load($new_op_category->getIdParent());
                     $mag_category
@@ -448,7 +574,8 @@ class OnzePlexApi
                 $new_op_category->save();
             }
             $operation
-                ->setMessage("Estado de importacion: Success, Cantidad Convertida:" . count($new_op_category_collection))
+                ->setMessage("Estado de importacion: Success, Cantidad Convertida:"
+                    . count($new_op_category_collection))
                 ->setCode('CCTM')
                 ->setLastId($new_last_id);
             $operation->setIsObjetNew(true);

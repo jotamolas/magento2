@@ -67,7 +67,7 @@ a {
     > strong {
         display: block;
         text-align: center;
-        margin-bottom: 50px;
+        margin-bottom: 20px;
         font-size: 36px;
         line-height: 1.1;
         color: #333333;
@@ -245,7 +245,7 @@ a {
             .panel {
                 &.wrapper {
                     border-bottom: 1px solid #e1e1e1;
-                    background-color: #ffffff;
+                    background-color: #000000; //Changed by jotadevs
                     .panel {
                         &.header {
                             padding-top: 0;
@@ -323,7 +323,7 @@ a {
                                         padding-left: 10px;
 
                                         > span {
-                                            color: #333333;
+                                            color: #FFFFFF; //Changed by jotamolas
                                             line-height: 22px;
                                             font-size: 14px;
                                             text-decoration: none;
@@ -332,7 +332,7 @@ a {
                                             display: block;
                                         }
                                         > a {
-                                            color: #333333;
+                                            color: #FFFFFF; //Changed by jotamolas
                                             line-height: 22px;
                                             font-size: 14px;
                                             text-decoration: none;
@@ -442,7 +442,9 @@ a {
                             float: left; /*change by jotadevs */
                             > img {
                                 display: block;
-                                margin: 0 auto;
+                               // margin: 0 autoi; Changed by jotadevs
+			        margin-top: 10px; //added by jotadevs
+				max-width: 80%; //added by jotadevs
                             }
                         }
                     }
@@ -639,6 +641,7 @@ a {
                                 position: relative;
                                 font-weight: 600;
                                 &.ui-state-active {
+
                                     background: @navigation-desktop-level0-item__hover__background;
                                     border: @navigation-desktop-level0-item__hover__border;
                                     color: @navigation-desktop-level0-item__hover__color;
@@ -649,6 +652,7 @@ a {
                         &.parent {
                             > a {
                                 &.level-top {
+
                                     padding: 15px 28px 15px 20px;
                                     > .ui-menu-icon {
                                         right: 10px;
@@ -1939,10 +1943,10 @@ h1, h2, h3, h4, h5, h6 {
     padding-bottom: 30px;
 }
 .top-margin {
-    margin-top: 30px;
+    margin-top: 10px; //chaged by jotadevs
 }
 .bottom-margin {
-    margin-bottom: 30px;
+    margin-bottom: 0px; //changed by jotadevs
 }
 @media(max-width: 991px) {
     .top-padding {
@@ -4016,7 +4020,7 @@ button:not(.primary) {
             }
             .text-block {
                 display: block;
-                padding-top: 20px;
+                //padding-top: 20px; deleted by jotadevs
                 .blog-title {
                     display: block;
                     font-size: 16px;
@@ -4035,11 +4039,12 @@ button:not(.primary) {
                         -webkit-transition: all .2s ease-in 0s;
                         text-decoration: none;
                         font-weight: 600;
+			text-align: center;//added by jotadevs
                     }
                     &:hover {
                         text-decoration: none;
                         > span {
-                            color: #00B0C7; /* changed by jotamolas */;
+                            color: #00B0C7; // changed by jotadevs
                             text-decoration: none;
                         }
                     }
@@ -4051,6 +4056,7 @@ button:not(.primary) {
                     line-height: 24px;
                     font-size: 14px;
                     font-weight: 400;
+		    text-align: center;//added by jotadevs
                 }
             }
         }
@@ -4094,8 +4100,8 @@ button:not(.primary) {
     width: 100%;
     clear: both;
     position: relative;
-    padding-top: 100px;
-    padding-bottom: 70px;
+    padding-top: 10px; //changed by jotadevs
+    padding-bottom: 10px; //changed by jotadevs
     box-sizing: border-box;
     background-size: cover;
     background-position: center center;
@@ -4110,11 +4116,12 @@ button:not(.primary) {
     right: 0;
     top: 0;
     bottom: 0;
-    background-color: rgba(0,0,0,0.9);
+    //background-color: rgba(0,0,0,0.9); jotadevs
+    background-color: #e0e0e0e0 ;
 }
 
 .testimonial-outer-wrapper .title-block > strong {
-    color: #ffffff;
+    color: #000000;
 }
 .testimonial-outer-wrapper .testimonial-slider {
     display: block;
@@ -4132,7 +4139,7 @@ button:not(.primary) {
     display: block;
     float: left;
     width: 100%;
-    margin-bottom: 25px;
+    margin-bottom: 5px; //changed by jotadevs
 }
 .testimonial-outer-wrapper .testimonial-slider .item .image-block > img {
     display: block;
@@ -4144,7 +4151,7 @@ button:not(.primary) {
 }
 .testimonial-outer-wrapper .testimonial-slider .item .image-block .testimonial-name {
     font-size: 20px;
-    color: #fff;
+    color: #000000;
     margin: 0 0 5px;
     font-weight: 500;
     display: block;
@@ -4153,7 +4160,7 @@ button:not(.primary) {
 }
 .testimonial-outer-wrapper .testimonial-slider .item .image-block .testimonial-desc {
     font-size: 17px;
-    color: #fff;
+    color: #000000; //changed by jotadebs
     margin: 0 0 5px;
     font-weight: 400;
     display: block;
@@ -4166,12 +4173,12 @@ button:not(.primary) {
     width: 100%;
 }
 .testimonial-outer-wrapper .testimonial-slider .item .text-block > p {
-    color: #fff;
+    color: #000000;
     font-size: 16px;
     line-height: 24px;
     position: relative;
     max-width: 75%;
-    margin-bottom: 35px;
+    margin-bottom: 15px;
     display: inline-block;
 }
 
@@ -4190,6 +4197,12 @@ button:not(.primary) {
 
 
 //Promotion block 1 start
+.cat-line-1{
+     margin-top: 50px;
+}
+.cat-line-2{
+     margin-bottom:50px;
+}
 .advert-outer-wrapper {
     display: block;
     float: left;

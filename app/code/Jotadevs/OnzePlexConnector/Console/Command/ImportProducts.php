@@ -21,7 +21,7 @@ class ImportProducts extends Command
      */
     protected function configure()
     {
-        $this->setName('jotadevs:op:import:products');
+        $this->setName('jotadevs:op:product:import  ');
         $this->setDescription('This command retrieve New products from ERP.');
         parent::configure();
     }
@@ -35,7 +35,7 @@ class ImportProducts extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): void
     {
-        $response =  $this->onzeplexapi->importFromPlex();
+        $response =  $this->onzeplexapi->importProductsFromPlex();
         $output->writeln('Estado: ' . $response['state']);
         $output->writeln('Productos Recibidos: ' . $response['received']);
         $output->writeln('Nuevos: ' . $response['new']);

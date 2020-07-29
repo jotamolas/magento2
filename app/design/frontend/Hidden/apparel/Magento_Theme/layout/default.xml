@@ -6,7 +6,7 @@
  */
 -->
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
-    <body>        
+    <body>
         <referenceContainer name="header.panel">
             <block class="Magento\Framework\View\Element\Html\Links" name="header.links">
                 <arguments>
@@ -20,6 +20,14 @@
                 </arguments>
             </block>
         </referenceContainer>
+        <referenceBlock name="header.links">
+            <block class="Magento\Framework\View\Element\Html\Link" name="header-new-link">
+                <arguments>
+                    <argument name="label" xsi:type="string" translate="true">Sucursales</argument>
+                    <argument name="path" xsi:type="string" translate="true">sucursales</argument>
+                </arguments>
+            </block>
+        </referenceBlock>
         <referenceBlock name="logo">
             <arguments>
                 <argument name="logo_img_width" xsi:type="number">148</argument>

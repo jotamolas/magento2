@@ -257,6 +257,42 @@ class UpgradeSchema implements \Magento\Framework\Setup\UpgradeSchemaInterface
                 ]
             );
         }
+        if (version_compare($context->getVersion(), '1.0.9', '<')) {
+            $setup->getConnection()->addColumn(
+                $setup->getTable('jotadevs_op_rubros'),
+                'is_plex_group',
+                [
+                    'type' => Table::TYPE_BOOLEAN,
+                    'size' => null,
+                    'nullable' => false,
+                    'default' => false,
+                    'comment' => 'Informa si se trata de un Grupo de Onex Plex'
+
+                ]
+            );
+        }
+        if (version_compare($context->getVersion(), '1.1.0', '<')) {
+            $setup->getConnection()->addColumn(
+                $setup->getTable('jotadevs_op_product'),
+                'grupo',
+                [
+                    'type' => Table::TYPE_TEXT,
+                    'nullable' => false,
+                    'comment' => 'Grupo del producto'
+
+                ]
+            );
+            $setup->getConnection()->addColumn(
+                $setup->getTable('jotadevs_op_product'),
+                'idgrupo',
+                [
+                    'type' => Table::TYPE_INTEGER,
+                    'nullable' => false,
+                    'comment' => 'Id grupo del producto'
+
+                ]
+            );
+        }
         $setup->endSetup();
     }
 }

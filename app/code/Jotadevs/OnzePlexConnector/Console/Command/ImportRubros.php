@@ -20,7 +20,7 @@ class ImportRubros extends Command
      */
     protected function configure()
     {
-        $this->setName('jotadevs:op:import:rubros');
+        $this->setName('jotadevs:op:rubro:imports');
         $this->setDescription('This command import Categories and SubCategories from ERP Onze Plex');
         parent::configure();
     }

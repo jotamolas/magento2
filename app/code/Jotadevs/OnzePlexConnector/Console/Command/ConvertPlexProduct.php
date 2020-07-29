@@ -22,7 +22,7 @@ class ConvertPlexProduct extends Command
      */
     protected function configure()
     {
-        $this->setName('jotadevs:op:convert:product');
+        $this->setName('jotadevs:op:product:convert');
         $this->setDescription(
             'Este comando convierte productos importados desde Plex y almacenados
              en base de datos que no hayan sido convertidos a productos Magento.'
@@ -42,6 +42,7 @@ class ConvertPlexProduct extends Command
     {
         $response = $this->onzeplexapi->convertToMagentoProduct();
         $output->writeln('Estado de Operación: ' . $response['state']);
-        $output->writeln('Catidad convertida: ' . $response['qty']);
+        $output->writeln('Cantidad convertida: ' . $response['qty']);
+        $output->writeln($response['message']);
     }
 }

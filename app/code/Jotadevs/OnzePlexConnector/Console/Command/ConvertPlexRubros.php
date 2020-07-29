@@ -20,7 +20,7 @@ class ConvertPlexRubros extends Command
      */
     protected function configure()
     {
-        $this->setName('jotadevs:op:convert:rubros');
+        $this->setName('jotadevs:op:rubro:convert');
         $this->setDescription('Convierte Rubros de OnePlex en Categorias Magento');
         parent::configure();
     }
