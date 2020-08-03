@@ -277,7 +277,8 @@ class UpgradeSchema implements \Magento\Framework\Setup\UpgradeSchemaInterface
                 'grupo',
                 [
                     'type' => Table::TYPE_TEXT,
-                    'nullable' => false,
+                    'nullable' => true,
+                    'default' => null,
                     'comment' => 'Grupo del producto'
 
                 ]
@@ -287,8 +288,41 @@ class UpgradeSchema implements \Magento\Framework\Setup\UpgradeSchemaInterface
                 'idgrupo',
                 [
                     'type' => Table::TYPE_INTEGER,
-                    'nullable' => false,
-                    'comment' => 'Id grupo del producto'
+                    'nullable' => true,
+                    'comment' => 'Id grupo del producto',
+                    'default' => null
+
+                ]
+            );
+        }
+        if (version_compare($context->getVersion(), '1.1.1', '<')) {
+            $setup->getConnection()->dropColumn(
+                $setup->getTable('jotadevs_op_product'),
+                'grupo'
+            );
+            $setup->getConnection()->addColumn(
+                $setup->getTable('jotadevs_op_product'),
+                'grupo',
+                [
+                    'type' => Table::TYPE_TEXT,
+                    'nullable' => true,
+                    'default' => null,
+                    'comment' => 'Grupo del producto'
+
+                ]
+            );
+            $setup->getConnection()->dropColumn(
+                $setup->getTable('jotadevs_op_product'),
+                'idgrupo'
+            );
+            $setup->getConnection()->addColumn(
+                $setup->getTable('jotadevs_op_product'),
+                'idgrupo',
+                [
+                    'type' => Table::TYPE_INTEGER,
+                    'nullable' => true,
+                    'comment' => 'Id grupo del producto',
+                    'default' => null
 
                 ]
             );

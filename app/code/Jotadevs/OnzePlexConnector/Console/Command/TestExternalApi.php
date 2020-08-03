@@ -41,8 +41,9 @@ class TestExternalApi extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): void
     {
-        $response = $this->externalApi->importGruposFromPlex();
-        var_dump($response);
-        //$output->writeln("quesiio");
+        $response = $this->externalApi->addCategoryToProduct();
+        //var_dump($response);
+        var_dump($response['items']);
+        $output->writeln(count($response['items']));
     }
 }

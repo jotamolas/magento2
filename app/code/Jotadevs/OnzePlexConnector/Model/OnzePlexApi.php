@@ -10,7 +10,7 @@ use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\CatalogInventory\Api\StockRegistryInterface;
 use Magento\Framework\HTTP\ZendClient;
 use Magento\Framework\Serialize\Serializer\Json;
-
+use Magento\Catalog\Api\CategoryLinkManagementInterface;
 class OnzePlexApi
 {
     protected $zendClient;
@@ -33,6 +33,8 @@ class OnzePlexApi
     private $uriDev = 'http://170.0.92.97/onzews/';
     private $uriProd = 'http://gralpaz.plexonzecenter.com.ar:8081/onzews/';
 
+    protected $categoryLinkManagement;
+
     public function __construct(
         PlexOperationFactory $plexoperation,
         PlexProductFactory $plexproduct,
@@ -44,6 +46,7 @@ class OnzePlexApi
         CategoryInterfaceFactory $categoryFactory,
         CategoryRepositoryInterface $categoryRepository,
         StockRegistryInterface $stockRegistry,
+        CategoryLinkManagementInterface $categoryLinkManagement,
         \Magento\Framework\App\State $state
     ) {
         $this->zendClient = $zendClient;
@@ -56,6 +59,7 @@ class OnzePlexApi
         $this->categoryFactory = $categoryFactory;
         $this->categoryRespository = $categoryRepository;
         $this->stockRegistry = $stockRegistry;
+        $this->categoryLinkManagement = $categoryLinkManagement;
         $this->state = $state;
     }
     /*
@@ -219,7 +223,6 @@ class OnzePlexApi
             ->setName("Obtener Productos desde OnzePlex")
             ->setCode("GPOP");
         //si hay resultados proseguimos
-
         if ($result['state'] == 'success') {
             if (!empty($result['result'])) {
                 $op_products = [];
@@ -229,7 +232,7 @@ class OnzePlexApi
 
                     $op_product = $this->plexproduct->create()->load($op_api_product['codproducto'], 'codproduct');
                     if (empty($op_product->toArray())) {
-                        //si no existe lo cargo de vuelta
+                        //si no existe lo cargo vuelta
                         foreach ($op_api_product as $key => $value) {
                             if ($key == 'codproducto') {
                                 $op_product->setSku($value);
@@ -242,6 +245,12 @@ class OnzePlexApi
                             ($key == 'idrubro') ? $op_product->setIdrubro($value) : null;
                             ($key == 'idSubro') ? $op_product->setIdrubro($value) : null;
                             ($key == 'stock') ? $op_product->setStock($value) : null;
+                            if ($key == 'grupos') {
+                                foreach ($key as $key_gr => $value_gr) {
+                                    ($key_gr == 'idgrupo') ? $op_product->setIdgrupo($value_gr) : null;
+                                    ($key_gr == 'grupo') ? $op_product->setGrupo($value_gr) : null;
+                                }
+                            }
                         }
                         $op_product->setIsObjectNew(true);
                         $op_product->save();
@@ -501,6 +510,7 @@ class OnzePlexApi
                     ->setAttributeSetId(4)
                     ->setPrice($new_op_product->getPrecio())
                     ->setStatus(\Magento\Catalog\Model\Product\Attribute\Source\Status::STATUS_ENABLED);
+
                 $mag_product = $this->productRepository->save($mag_product);
 
                 $stockItem = $this->stockRegistry->getStockItemBySku($mag_product->getSku());
@@ -592,5 +602,79 @@ class OnzePlexApi
                 'message' => 'nothing for import'
             ];
         }
+    }
+    public function updateGrupofromPlex()
+    {
+        //seteo operacion
+        $operation = $this->plexoperation->create()->setName("Actualizo los Grupos de los productos")->setCode("UGFP");
+        $op_products_collection = $this->plexproduct->create()->getCollection()->load();
+        $update_from_plex = $this->getProductsOnexPlex(null, $op_products_collection->getColumnValues('codproduct'));
+        if ($update_from_plex['state'] == 'success') {
+            $op_products_updated = [];
+            if (!empty($update_from_plex['result'])) {
+                //recorro el array de productos para analizar si ya lo tengo en base
+                foreach ($update_from_plex['result'] as $op_api_product_updated) {
+                    $op_product_updated = $this->plexproduct
+                        ->create()
+                        ->load($op_api_product_updated['codproducto'], 'codproduct');
+                    foreach ($op_api_product_updated as $key => $value) {
+                        if ($key == 'grupos') {
+                            foreach ($value as $gr) {
+                                foreach ($gr as $key_gr => $value_gr) {
+                                    ($key_gr == 'idgrupo') ? $op_product_updated->setIdgrupo($value_gr) : null;
+                                    ($key_gr == 'grupo') ? $op_product_updated->setGrupo($value_gr) : null;
+                                }
+                            }
+                        }
+                    }
+                    $op_product_updated->save();
+                    $op_products_updated[] = $op_product_updated;
+                }
+            }
+            $operation
+                    ->setMessage(
+                        "Estado de Actualizacion: Success, Productos recibidos:" .
+                        count($update_from_plex['result']) . " Nuevos:" . count($op_products_updated)
+                    )->setLastId()
+                    ->setIsObjetNew(true)
+                    ->save();
+            return [
+                    'state' => 'success',
+                    'received' => count($update_from_plex['result']),
+                    'updated' => count($op_products_updated)
+                ];
+        } else {
+            $operation->setMessage("Estado de importacion: Error, Mensaje de Error:" . $update_from_plex['message']);
+            $operation->setIsObjetNew(true);
+            $operation->save();
+            return [
+                'state' => 'error',
+                'message' => $update_from_plex['message']
+            ];
+        }
+    }
+    public function addCategoryToProduct()
+    {
+        $count = 0;
+        //Este método agrega o actualiza la categoria a un producto ya sincronizado (convertido).
+        $op_products_collection = $this->plexproduct->create()->getCollection()
+            ->addFieldToFilter('is_synchronized', ['eq' => true])
+            ->addFieldToFilter('idgrupo', ['neq' => 'NULL']);
+        //recorro los productos plex que estan sincronizados, busco el producto magento correspondiente
+        foreach ($op_products_collection as $op_product) {
+            $op_grupo = $this->plexcategory->create()->getCollection()
+                ->addFieldToFilter('id_plex', ['eq',$op_product->getIdgrupo()])
+                ->addFieldToFilter('is_plex_group', ['eq', true])
+                ->getFirstItem();
+            $mag_product = $this->productFactory->create()->load($op_product->getIdMagento());
+            //Si el grupo esta sincronizado como categoria en magento prosigo sino lo ignoro hasta q se importe.
+            if ($op_grupo->getIsSynchronized()) {
+                $mag_category =  $this->categoryFactory->create()->load($op_grupo->getIdMagento());
+                $this->categoryLinkManagement
+                    ->assignProductToCategories($mag_product->getSku(), [$mag_category->getId()]);
+                $count++;
+            }
+        }
+        return $count;
     }
 }
