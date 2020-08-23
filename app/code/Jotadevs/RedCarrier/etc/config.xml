@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <carriers>
+            <red>
+                <active>0</active>
+                <sallowspecific>0</sallowspecific>
+                <model>Jotadevs\RedCarrier\Model\Carrier\red</model>
+                <name>Envio Gratuito de Red</name>
+                <price>0</price>
+                <title>Envio Red</title>
+                <specificerrmsg>This shipping method is not available. To use this shipping method, please contact us.</specificerrmsg>
+            </red>
+            <redgcba>
+                <active>0</active>
+                <sallowspecific>0</sallowspecific>
+                <model>Jotadevs\RedCarrier\Model\Carrier\redgcba</model>
+                <name>Envio a Gran Córdoba por Red</name>
+                <price>100</price>
+                <title>Envio Gran Cordoba Red</title>
+                <specificerrmsg>This shipping method is not available. To use this shipping method, please contact us.</specificerrmsg>
+            </redgcba>
+        </carriers>
+    </default>
+</config>

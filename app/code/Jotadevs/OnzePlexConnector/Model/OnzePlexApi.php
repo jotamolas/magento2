@@ -2,6 +2,7 @@
 
 namespace Jotadevs\OnzePlexConnector\Model;
 
+use Magento\Catalog\Api\CategoryLinkManagementInterface;
 use Magento\Catalog\Api\CategoryRepositoryInterface;
 use Magento\Catalog\Api\Data\CategoryInterfaceFactory;
 use Magento\Catalog\Api\Data\ProductInterface;
@@ -10,7 +11,8 @@ use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\CatalogInventory\Api\StockRegistryInterface;
 use Magento\Framework\HTTP\ZendClient;
 use Magento\Framework\Serialize\Serializer\Json;
-use Magento\Catalog\Api\CategoryLinkManagementInterface;
+use Magento\Sales\Model\ResourceModel\Order\CollectionFactory;
+
 class OnzePlexApi
 {
     protected $zendClient;
@@ -29,6 +31,9 @@ class OnzePlexApi
 
     private $categoryFactory;
     private $categoryRespository;
+    /* @var $_orderCollectionFactory \Magento\Sales\Model\ResourceModel\Order\CollectionFactory */
+    private $orderCollectionFactory;
+
     private $state;
     private $uriDev = 'http://170.0.92.97/onzews/';
     private $uriProd = 'http://gralpaz.plexonzecenter.com.ar:8081/onzews/';
@@ -47,7 +52,8 @@ class OnzePlexApi
         CategoryRepositoryInterface $categoryRepository,
         StockRegistryInterface $stockRegistry,
         CategoryLinkManagementInterface $categoryLinkManagement,
-        \Magento\Framework\App\State $state
+        \Magento\Framework\App\State $state,
+        CollectionFactory $orderCollectionFactory
     ) {
         $this->zendClient = $zendClient;
         $this->json = $json;
@@ -61,11 +67,39 @@ class OnzePlexApi
         $this->stockRegistry = $stockRegistry;
         $this->categoryLinkManagement = $categoryLinkManagement;
         $this->state = $state;
+        $this->orderCollectionFactory = $orderCollectionFactory;
     }
     /*
      * este metodo obtiene los productos desde la API Onze Plex
      * se le puede consultar por fecha de cambio o ids de productos
      * */
+
+    public function getPromocionesPlex()
+    {
+        $this->zendClient->resetParameters();
+        try {
+            $this->zendClient->setUri($this->uriProd . "ec_getpromociones");
+            $this->zendClient->setMethod(ZendClient::GET);
+            $this->zendClient->setAuth($this->userProd, $this->passwordProd);
+            $this->zendClient->setHeaders(['Content-Type' => 'application/json']);
+            $response = $this->zendClient->request();
+            $response_array = $this->json->unserialize($response->getBody());
+            //var_dump($response_array);
+            //var_dump($response_array['response']['content']['productos']);
+            //var_dump($response_array['response']['content']['totregistros']);
+            return [
+                'state' => 'success',
+                'result' => $response_array['response']['content']['promociones']
+            ];
+        } catch (\Zend_Http_Client_Exception $e) {
+            return [
+                'state' => 'error',
+                'code' => $e->getCode(),
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+
     public function getProductsOnexPlex(\DateTime $fechadecambio = null, array $ids = null)
     {
         $parameters = [];
@@ -84,7 +118,6 @@ class OnzePlexApi
             $parameters = array_merge($parameters, ['idproducto' => $idstring]);
         }
         $this->zendClient->resetParameters();
-        //var_dump($parameters);
         try {
             $this->zendClient->setUri($this->uriProd . "ec_getproductos");
             $this->zendClient->setMethod(ZendClient::GET);
@@ -92,15 +125,11 @@ class OnzePlexApi
             $this->zendClient->setParameterGet($parameters);
             $this->zendClient->setHeaders(
                 [
-                    'Content-Type' => 'application/json',
-                   // 'x-rapidapi-host' => '170.0.92.97'
+                    'Content-Type' => 'application/json'
                 ]
             );
             $response = $this->zendClient->request();
             $response_array = $this->json->unserialize($response->getBody());
-            //var_dump($response);
-            //var_dump($response_array['response']['content']['productos']);
-            //var_dump($response_array['response']['content']['totregistros']);
             return [
                 'state' => 'success',
                 'result' => $response_array['response']['content']['productos']
@@ -187,32 +216,6 @@ class OnzePlexApi
                 'code' => $e->getCode(),
                 'message' => $e->getMessage()
             ];
-        }
-    }
-    public function getPromotionsPlex()
-    {
-        $this->zendClient->resetParameters();
-        //var_dump($parameters);
-        try {
-            $this->zendClient->setUri($this->uriProd . "ec_getpromociones");
-            $this->zendClient->setMethod(ZendClient::GET);
-            $this->zendClient->setAuth($this->userProd, $this->passwordProd);
-            $this->zendClient->setHeaders(['Content-Type' => 'application/json']);
-
-            $response = $this->zendClient->request();
-            $response_array = $this->json->unserialize($response->getBody());
-            return $response_array;
-            /*return [
-                'state' => 'success',
-                'result' => $response_array['response']['content']['subrubros']
-            ];*/
-        } catch (\Zend_Http_Client_Exception $e) {
-            /*return [
-                'state' => 'error',
-                'code' => $e->getCode(),
-                'message' => $e->getMessage()
-            ];*/
-            return "error";
         }
     }
     public function importProductsFromPlex()

@@ -1,23 +1,20 @@
 <?php
 
-namespace Jotadevs\OnzePlexConnector\Console\Command;
+namespace Jotadevs\OCAEPackShipping\Console\Command;
 
-use Jotadevs\OnzePlexConnector\Model\OnzePlexApi;
-use Jotadevs\OnzePlexConnector\Model\PlexProductFactory;
+use Jotadevs\OCAEPackShipping\Model\Query\OcaApi;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class TestExternalApi extends Command
+class Test extends Command
 {
-    private $externalApi;
-    private $plexproduct;
+    private $oca;
     public function __construct(
-        OnzePlexApi $externalApi,
-        PlexProductFactory $plexproduct
+        OcaApi $oca
     ) {
-        $this->externalApi = $externalApi;
-        $this->plexproduct = $plexproduct;
+        $this->oca = $oca;
         parent::__construct();
     }
 
@@ -26,8 +23,13 @@ class TestExternalApi extends Command
      */
     protected function configure()
     {
-        $this->setName('jotadevs:test:externalapi');
+        $this->setName('jotadevs:oca_api:test');
         $this->setDescription('To test putooo');
+        $this->addArgument(
+            'postalcode',
+            InputArgument::REQUIRED,
+            'Codigo Postal'
+        );
         parent::configure();
     }
 
@@ -41,7 +43,8 @@ class TestExternalApi extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): void
     {
-        $response = $this->externalApi->getPromocionesPlex();
+        //$response = $this->oca->tarifarEnvio($input->getArgument('postalcode'));
+        $response = $this->oca->GetCentrosImposicionPorCP($input->getArgument('postalcode'));
         var_dump($response);
     }
 }

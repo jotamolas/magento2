@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <carriers>
+            <lancioni>
+                <active>0</active>
+                <sallowspecific>0</sallowspecific>
+                <model>Jotadevs\LancioniCarrier\Model\Carrier\lancioni</model>
+                <name>Expreso Lancioni</name>
+                <price>358</price>
+                <title>Expreso Lancioni</title>
+                <specificerrmsg>This shipping method is not available. To use this shipping method, please contact us.</specificerrmsg>
+            </lancioni>
+        </carriers>
+    </default>
+</config>

@@ -2,7 +2,9 @@
 
 namespace Jotadevs\OnzePlexConnector\Model;
 
-class PlexProduct extends \Magento\Framework\Model\AbstractModel
+use Magento\Framework\Model\AbstractModel;
+
+class PlexProduct extends AbstractModel
 {
     protected function _construct()
     {
