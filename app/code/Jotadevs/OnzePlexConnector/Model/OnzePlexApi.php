@@ -9,8 +9,10 @@ use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Api\Data\ProductInterfaceFactory;
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\CatalogInventory\Api\StockRegistryInterface;
+use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Framework\HTTP\ZendClient;
 use Magento\Framework\Serialize\Serializer\Json;
+use Magento\Sales\Api\OrderRepositoryInterface;
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory;
 
 class OnzePlexApi
@@ -24,6 +26,9 @@ class OnzePlexApi
     protected $plexproduct;
     protected $plexcategory;
     protected $plexoperation;
+    protected $plex_mercadopago = 10;
+    /** @var $plexorder PlexOrder */
+    protected $plexorder;
 
     private $productFactory;
     private $productRepository;
@@ -33,6 +38,11 @@ class OnzePlexApi
     private $categoryRespository;
     /* @var $_orderCollectionFactory \Magento\Sales\Model\ResourceModel\Order\CollectionFactory */
     private $orderCollectionFactory;
+
+    /** @var CustomerRepositoryInterface */
+    private $_customerRepository;
+    /** @var OrderRepositoryInterface */
+    private $_orderRepository;
 
     private $state;
     private $uriDev = 'http://170.0.92.97/onzews/';
@@ -44,6 +54,7 @@ class OnzePlexApi
         PlexOperationFactory $plexoperation,
         PlexProductFactory $plexproduct,
         PlexCategoryFactory $plexcategory,
+        PlexOrderFactory $plexorder,
         ZendClient $zendClient,
         Json $json,
         ProductInterfaceFactory $productFactory,
@@ -53,13 +64,16 @@ class OnzePlexApi
         StockRegistryInterface $stockRegistry,
         CategoryLinkManagementInterface $categoryLinkManagement,
         \Magento\Framework\App\State $state,
-        CollectionFactory $orderCollectionFactory
+        CollectionFactory $orderCollectionFactory,
+        OrderRepositoryInterface $orderRepository,
+        CustomerRepositoryInterface $customerRepository
     ) {
         $this->zendClient = $zendClient;
         $this->json = $json;
         $this->plexproduct = $plexproduct;
         $this->plexcategory = $plexcategory;
         $this->plexoperation = $plexoperation;
+        $this->plexorder = $plexorder;
         $this->productFactory = $productFactory;
         $this->productRepository = $productRepository;
         $this->categoryFactory = $categoryFactory;
@@ -68,13 +82,15 @@ class OnzePlexApi
         $this->categoryLinkManagement = $categoryLinkManagement;
         $this->state = $state;
         $this->orderCollectionFactory = $orderCollectionFactory;
+        $this->_customerRepository = $customerRepository;
+        $this->_orderRepository = $orderRepository;
     }
     /*
      * este metodo obtiene los productos desde la API Onze Plex
      * se le puede consultar por fecha de cambio o ids de productos
      * */
 
-    public function getPromocionesPlex()
+    /*public function getPromocionesPlex()
     {
         $this->zendClient->resetParameters();
         try {
@@ -98,8 +114,7 @@ class OnzePlexApi
                 'message' => $e->getMessage()
             ];
         }
-    }
-
+    }*/
     public function getProductsOnexPlex(\DateTime $fechadecambio = null, array $ids = null)
     {
         $parameters = [];
@@ -218,6 +233,81 @@ class OnzePlexApi
             ];
         }
     }
+    public function getSucursalesPlex()
+    {
+        $this->zendClient->resetParameters();
+        try {
+            $this->zendClient->setUri($this->uriProd . "ec_getsucursales");
+            $this->zendClient->setMethod(ZendClient::GET);
+            $this->zendClient->setAuth($this->userProd, $this->passwordProd);
+            $this->zendClient->setHeaders(['Content-Type' => 'application/json']);
+
+            $response = $this->zendClient->request();
+            $response_array = $this->json->unserialize($response->getBody());
+            return [
+                'state' => 'success',
+                'result' => $response_array['response']['content']['sucursales']
+            ];
+        } catch (\Zend_Http_Client_Exception $e) {
+            return [
+                'state' => 'error',
+                'code' => $e->getCode(),
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+
+    public function getPedidos($id_pedido = 'E00200000005')
+    {
+        $this->zendClient->resetParameters();
+        try {
+            $this->zendClient->setUri($this->uriProd . "ec_getpedidos");
+            $this->zendClient->setMethod(ZendClient::GET);
+            $this->zendClient->setAuth($this->userProd, $this->passwordProd);
+            $this->zendClient->setHeaders(['Content-Type' => 'application/json']);
+            $this->zendClient->setParameterGet(
+                'idpedido',
+                $id_pedido
+            );
+            $response = $this->zendClient->request();
+            $response_array = $this->json->unserialize($response->getBody());
+            return [
+                'state' => 'success',
+                'result' => $response_array['response']['content']['pedidos']
+            ];
+        } catch (\Zend_Http_Client_Exception $e) {
+            return [
+                'state' => 'error',
+                'code' => $e->getCode(),
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+
+    public function getMediosPago()
+    {
+        $this->zendClient->resetParameters();
+        try {
+            $this->zendClient->setUri($this->uriProd . "ec_getmediosdepago");
+            $this->zendClient->setMethod(ZendClient::GET);
+            $this->zendClient->setAuth($this->userProd, $this->passwordProd);
+            $this->zendClient->setHeaders(['Content-Type' => 'application/json']);
+
+            $response = $this->zendClient->request();
+            $response_array = $this->json->unserialize($response->getBody());
+            return [
+                'state' => 'success',
+                'result' => $response_array['response']['content']['medios']
+            ];
+        } catch (\Zend_Http_Client_Exception $e) {
+            return [
+                'state' => 'error',
+                'code' => $e->getCode(),
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+
     public function importProductsFromPlex()
     {
         //llamamos a la RestApi del Erp y traemos TODOS los productos.
@@ -232,10 +322,9 @@ class OnzePlexApi
                 //recorro el array de productos para analizar si ya lo tengo en base
                 foreach ($result['result'] as $op_api_product) {
                     //verifico si no existe ya en la tabla de op
-
                     $op_product = $this->plexproduct->create()->load($op_api_product['codproducto'], 'codproduct');
                     if (empty($op_product->toArray())) {
-                        //si no existe lo cargo vuelta
+                        /*si no existe lo cargo TODO VER $op_product... */
                         foreach ($op_api_product as $key => $value) {
                             if ($key == 'codproducto') {
                                 $op_product->setSku($value);
@@ -679,5 +768,236 @@ class OnzePlexApi
             }
         }
         return $count;
+    }
+
+    /**
+     * Area de Pedidos...
+     * 1- Tomo todos los pedidos completados y los grabo en la tabla intermedia prepareOrderToSync
+     * 2- Busco en tabla intermerdia sin sincronizar y sincronizo con Plex  (post para crear el pedido e informar el pago)
+     *      2.1 Busco todas las ordenes en plexOrder sin estar sincronizadas y traigo desde magento los datos necesarios para sincronizar --> getMagentoOrdersToSync.
+     *      2.2 Envio de a una Post al ws de Plex.
+     *
+     */
+    public function prepareOrderToSync()
+    {
+        $OrderCollection = $this->orderCollectionFactory->create()
+            ->addFieldToSelect('*')
+            ->addFieldToFilter('status', ['eq' => 'pending']);
+        $orders_syncs = [];
+        foreach ($OrderCollection as $order) {
+            $plexOrder = $this->plexorder->create()->load($order->getId(), 'id_magento');
+            if ($plexOrder->isEmpty()) {
+                $newPlexOrder = $this->plexorder->create();
+                $newPlexOrder->setIdMagento($order->getId())
+                    ->setIsSynchronized(false);
+                $newPlexOrder->setIsObjectNew(true);
+                $newPlexOrder->save();
+                $orders_syncs[] = $newPlexOrder;
+            }
+        }
+
+        return[
+          'status' => 'ok',
+          'qty' => count($orders_syncs)
+        ];
+    }
+    public function getMagentoOrdersToSync()
+    {
+        $plexOrderCollection = $this->plexorder->create()->getCollection()
+            ->addFieldToFilter('is_synchronized', ['eq' => false])
+            ->load();
+        $plexOrderToSync_Ids = $plexOrderCollection->getColumnValues('id_magento');
+        //var_dump($plexOrderToSync_Ids);
+        if (!empty($plexOrderToSync_Ids)) {
+            $magOrders = [];
+            $magOrderCollection = $this->orderCollectionFactory->create()
+                ->addAttributeToSelect("*")
+                ->addFieldToFilter('entity_id', ['in' => $plexOrderToSync_Ids]);
+            // var_dump($magOrderCollection->toArray());
+            /** @var \Magento\Sales\Model\Order $magOrder */
+            $rs_order = [];
+            foreach ($magOrderCollection as $magOrder) {
+                $customer = $this->_customerRepository->getById($magOrder->getCustomerId());
+                /** @var \Magento\Sales\Api\Data\OrderAddressInterface $shippingAddress */
+                $shippingAddress = $magOrder->getShippingAddress();
+                $line = [];
+                /** @var \Magento\Sales\Model\Order\Item $item */
+                foreach ($magOrder->getAllVisibleItems() as $item) {
+                    /** @var \Magento\Catalog\Model\Product $product */
+                    $product = $item->getProduct();
+                    if ($product) {
+                        $line [] = [
+                        'line_amount' => $item->getRowTotalInclTax(),
+                        'line_total_descuento' => $item->getDiscountAmount(),
+                        'prod_qty' => $item->getQtyOrdered(),
+                        'qty_ordered' => $item->getOrderId(),
+                        'product_id' => $product->getId(),
+                        'product_sku' => $product->getSku(),
+                        'product_name' => $product->getName()
+                        ];
+                    } else {
+                        var_dump($item->getName());
+                    }
+                }
+                ($magOrder->getShippingMethod() == 'storepickup_') ? $tipo_entrega = 'R' : $tipo_entrega = 'E';
+                ($magOrder->getShippingMethod() == 'storepickup_') ? $observacion = $magOrder->getShippingDescription() : $observacion = null;
+                //TODO ver el id de sucursal
+                $rs_order = [
+                    'order_id' => $magOrder->getId(),
+                    'order_cliente_nombre' => $magOrder->getCustomerName(),
+                    'order_cliente_mail' => $magOrder->getCustomerEmail(),
+                    'order_cliente_tdoc' => 'DNI',
+                    'order_cliente_doc' => $customer->getCustomAttribute('doc')->getValue(),
+                    'order_cliente_domicilio' => $shippingAddress->getStreet(),
+                    'order_cliente_codpostal' => $shippingAddress->getPostcode(),
+                    'order_cliente_ciudad' => $shippingAddress->getCity(),
+                    'order_cliente_provincia' => $shippingAddress->getRegion(),
+                    'order_cliente_telefono' => $shippingAddress->getTelephone(),
+                    'order_observacion' => $observacion,
+                    'order_tipo_entrega' => $tipo_entrega,
+                    'order_tipo_pago' => 'L',
+                    'order_costo_envio' => $magOrder->getShippingAmount(),
+                    'order_cupon_dto_codigo' => $magOrder->getDiscountDescription(),
+                    'order_cupon_dto_importe' => $magOrder->getDiscountAmount(),
+                    'order_amount_total' => $magOrder->getGrandTotal(),
+                    'order_total_items' => $magOrder->getTotalItemCount(),
+                    'lineas' => $line
+                ];
+                $magOrders[] = $rs_order;
+            }
+            return  [
+                'status' => 'ok',
+                'orders_to_sync' => $magOrders,
+                'qty_to_sync' => count($magOrders)
+            ];
+        }
+        return [
+            'status' => 'ok',
+            'qty_to_sync' => 0
+        ];
+    }
+    public function postOrderToPlex($magOrder)
+    {
+        $lineas = [];
+
+        foreach ($magOrder['lineas'] as $linea) {
+            $lineas[] = [
+            'codproducto' => $linea['product_sku'],
+            'producto' => $linea['product_name'],
+            'cantidad' => $linea['prod_qty'],
+            'precio' => $linea['line_amount'],
+            'idpromo' => "",
+            'promo' => "",
+            'totaldescuento' => $linea['line_total_descuento'],
+            ];
+        }
+        $parameters = [
+            'cli_mail' => $magOrder['order_cliente_mail'],
+            'cli_tdoc' => 'DNI',
+            'cli_doc' => $magOrder['order_cliente_doc'],
+            'cli_nombre' => $magOrder['order_cliente_nombre'],
+            'cli_domicilio' => $magOrder['order_cliente_domicilio'][0],
+            'cli_codpostal' => $magOrder['order_cliente_codpostal'],
+            'cli_localidad' => $magOrder['order_cliente_ciudad'],
+            'cli_provincia' => $magOrder['order_cliente_provincia'],
+            'cli_telefono' => $magOrder['order_cliente_telefono'],
+            'tipoentrega' => $magOrder['order_tipo_entrega'],
+            'tipopago' => $magOrder['order_tipo_pago'],
+            'observacion' => $magOrder['order_observacion'],
+            'idsucursal' => "", //sacarklo de observacion
+            'external_id' => $magOrder['order_id'],
+            'external_sw' => "MAGENTO",
+            'costo_envio' => $magOrder['order_costo_envio'],
+            'cupondto_codigo' => $magOrder['order_cupon_dto_codigo'],
+            'cupondto_importe' => $magOrder['order_cupon_dto_importe'],
+            'productos' => $lineas
+            ];
+        $this->zendClient->resetParameters();
+
+        try {
+            $this->zendClient->setUri('http://gralpaz.plexonzecenter.com.ar:8081/onzews');
+            $this->zendClient->setMethod(ZendClient::POST);
+            $this->zendClient->setAuth($this->userProd, $this->passwordProd);
+
+            $data = [
+                'request' => [
+                    'type' => 'EC_CREARPEDIDO',
+                    'content' => $parameters
+                ]
+            ];
+            $this->zendClient->setHeaders(
+                [
+                     'Content-Type' => 'application/json',
+                 ]
+            );
+            $this->zendClient->setRawData(json_encode($data));
+            $response = $this->zendClient->request();
+            $response_array = $this->json->unserialize($response->getBody());
+
+            if ($response_array['response']['respcode'] == '0') {
+                $mag_order = $this->_orderRepository->get($magOrder['order_id']);
+                $plex_order = $this->plexorder->create()->load($magOrder['order_id'], 'id_magento');
+                $plex_order
+                   ->setIdPlex($response_array['response']['content']['idpedido'])
+                   ->setIsSynchronized(true);
+                $plex_order->save();
+                $mag_order->setStatus('sync_plex')->setState('procesing');
+                $this->_orderRepository->save($mag_order);
+                return [
+                    'state' => 'success',
+                    'plex_id_pedido' => $response_array['response']['content']['idpedido']
+                ];
+            } else {
+                return [
+                   'state' => 'error',
+                   'message' => $response_array['response']['respmsg']
+                ];
+            }
+        } catch (\Zend_Http_Client_Exception $e) {
+            return [
+               'state' => 'error',
+               'code' => $e->getCode(),
+               'message' => $e->getMessage()
+            ];
+        }
+    }
+
+    public function informPaymentToPlex()
+    {
+        /**
+         * Este metodo en esta version solo trabaja con MercadoPago
+         * No puedo buscar los medios de pagos... no sirve
+         * tengo que harcodear *** TODO despues metodo de descargar y vincular con mercado pago
+           1. Busco todas las ordenes magento que tienen el estado sync_plex
+         * 2. Recorro las ordenes obtenidas
+         *      2.1 verifico si tiene pago realizado
+         *      2.1 si lo tiene informo pago a plex y actualizo plex y orden magenot a estado completo.
+         */
+        $mag_orders_collection = $this->orderCollectionFactory->create()
+            ->addAttributeToSelect("*")
+            ->addFieldToFilter('status', ['eq' => 'sync_plex']);
+
+        /** @var \Magento\Sales\Model\Order $mag_order */
+        $data = [];
+        foreach ($mag_orders_collection as $mag_order) {
+            if (in_array($mag_order->getPayment()->getMethod(), ['mercadopago_custom','mercadopago_customticket']) and
+                $mag_order->getPayment()->getAdditionalInformation()['paymentResponse']['status'] == 'approved' and
+                $mag_order->getPayment()->getAdditionalInformation()['paymentResponse']['status_detail'] == 'accredited'
+            ) {
+                $this->zendClient->resetParameters();
+
+                $data [] =
+                 [
+                     'id_orden' => $mag_order->getId(),
+                     'increment_id' => $mag_order->getIncrementId(),
+                     'metodo_pago' => $mag_order->getPayment()->getMethod(),
+                     'metodo_total' => $mag_order->getPayment()->getAmountPaid(),
+                     'metodo_codigo' => $mag_order->getPayment()->getAdditionalInformation()['paymentResponse']['id'],
+                     'metodo_status' => $mag_order->getPayment()->getAdditionalInformation()['paymentResponse']['status'],
+                     'metodo_status_detail' => $mag_order->getPayment()->getAdditionalInformation()['paymentResponse']['status_detail']
+                 ];
+            }
+        }
+        return $data;
     }
 }

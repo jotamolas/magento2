@@ -56,7 +56,7 @@ class red extends AbstractCarrier implements
         $result = $this->_rateResultFactory->create();
         $method = $this->_rateMethodFactory->create();
         $method->setCarrier('red');
-        $method->setCarrierTitle($this->getConfigData('title'));
+        $method->setCarrierTitle($this->getConfigData('title'). " a " . $request->getDestCity());
         $method->setMethod('red');
         $method->setMethodTitle($this->getConfigData('name'));
         $method->setPrice($shippingPrice);

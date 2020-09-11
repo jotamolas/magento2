@@ -43,8 +43,8 @@ class Test extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): void
     {
-        //$response = $this->oca->tarifarEnvio($input->getArgument('postalcode'));
-        $response = $this->oca->GetCentrosImposicionPorCP($input->getArgument('postalcode'));
+        $response = $this->oca->tarifarEnvio($input->getArgument('postalcode'));
+        //$response = $this->oca->GetCentrosImposicionPorCP($input->getArgument('postalcode'));
         var_dump($response);
     }
 }

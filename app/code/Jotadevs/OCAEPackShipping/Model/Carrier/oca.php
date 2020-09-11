@@ -61,7 +61,7 @@ class oca extends AbstractCarrier implements
                 /* @var $item \Magento\Quote\Model\Quote\Item */
                 $cantidad = $cantidad + (int) $item->getQty();
             }
-            $paquetes = (int) $cantidad  / (int) $this->getConfigData('oca_q_art_estandar');
+            $paquetes = ceil((int) $cantidad  / (int) $this->getConfigData('oca_q_art_estandar')    );
 
             $response = $this->ocaApi->tarifarEnvio(
                 $dest_post_code,

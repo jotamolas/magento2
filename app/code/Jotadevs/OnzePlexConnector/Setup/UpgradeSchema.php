@@ -327,6 +327,83 @@ class UpgradeSchema implements \Magento\Framework\Setup\UpgradeSchemaInterface
                 ]
             );
         }
+        if (version_compare($context->getVersion(), '1.1.2', '<')) {
+            $setup->getConnection()->addColumn(
+                $setup->getTable('jotadevs_op_order'),
+                'id_magento',
+                [
+                    'type' => Table::TYPE_INTEGER,
+                    'nullable' => false,
+                    'comment' => 'Id de la orden en Magento.'
+
+                ]
+            );
+            $setup->getConnection()->addColumn(
+                $setup->getTable('jotadevs_op_order'),
+                'id_plex',
+                [
+                    'type' => Table::TYPE_INTEGER,
+                    'nullable' => false,
+                    'comment' => 'Id de la orden en Onze Plex.'
+                ]
+            );
+            $setup->getConnection()->addColumn(
+                $setup->getTable('jotadevs_op_order'),
+                'is_synchronized',
+                [
+                    'type' => Table::TYPE_BOOLEAN,
+                    'size' => null,
+                    'nullable' => false,
+                    'default' => false,
+                    'comment' => 'Informa si la orden fué sincronizada en Plex'
+
+                ]
+            );
+            $setup->getConnection()->addColumn(
+                $setup->getTable('jotadevs_op_order'),
+                'create_at',
+                [
+                    'type' => Table::TYPE_TIMESTAMP,
+                    'nullable' => false,
+                    'comment' => 'Fecha de primer importación desde Magento',
+                    'default' => \Magento\Framework\DB\Ddl\Table::TIMESTAMP_INIT,
+                ]
+            );
+            $setup->getConnection()->addColumn(
+                $setup->getTable('jotadevs_op_order'),
+                'update_at',
+                [
+                    'type' => Table::TYPE_TIMESTAMP,
+                    'nullable' => false,
+                    'comment' => 'Fecha de actualización',
+                    'default' => \Magento\Framework\DB\Ddl\Table::TIMESTAMP_INIT_UPDATE
+                ]
+            );
+        }
+        if (version_compare($context->getVersion(), '1.1.3', '<')) {
+            $setup->getConnection()->changeColumn(
+                $setup->getTable('jotadevs_op_order'),
+                'id_plex',
+                'id_plex',
+                [
+                    'type' => Table::TYPE_TEXT,
+                    'nullable' => false,
+                    'default' => false
+                ]
+            );
+            $setup->getConnection()->addColumn(
+                $setup->getTable('jotadevs_op_order'),
+                'is_payment_informed',
+                [
+                    'type' => Table::TYPE_BOOLEAN,
+                    'size' => null,
+                    'nullable' => false,
+                    'default' => false,
+                    'comment' => 'Informa si el pago de la orden fue sincronizada en Plex'
+
+                ]
+            );
+        }
         $setup->endSetup();
     }
 }
