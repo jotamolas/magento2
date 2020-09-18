@@ -42,12 +42,12 @@ class TestExternalApi extends Command
     protected function execute(InputInterface $input, OutputInterface $output): void
     {
         //$response = $this->externalApi->prepareOrderToSync();
-        /* $response = $this->externalApi->getMagentoOrdersToSync();
-         if ($response['status'] == 'ok' and $response['qty_to_sync'] > 0) {
-             foreach ($response['orders_to_sync'] as $order) {
-                 var_dump($this->externalApi->postOrderToPlex($order));
-             }
-         }*/
+        /*$response = $this->externalApi->getMagentoOrdersToSync();
+        if ($response['status'] == 'ok' and $response['qty_to_sync'] > 0) {
+            foreach ($response['orders_to_sync'] as $order) {
+                var_dump($this->externalApi->postOrderToPlex($order));
+            }
+        }*/
         $response = $this->externalApi->informPaymentToPlex();
         var_dump($response);
         //var_dump($this->externalApi->getMediosPago());

@@ -775,8 +775,7 @@ class OnzePlexApi
      * 1- Tomo todos los pedidos completados y los grabo en la tabla intermedia prepareOrderToSync
      * 2- Busco en tabla intermerdia sin sincronizar y sincronizo con Plex  (post para crear el pedido e informar el pago)
      *      2.1 Busco todas las ordenes en plexOrder sin estar sincronizadas y traigo desde magento los datos necesarios para sincronizar --> getMagentoOrdersToSync.
-     *      2.2 Envio de a una Post al ws de Plex.
-     *
+     *      2.2 Envio de a una Post al ws de Plex.     *
      */
     public function prepareOrderToSync()
     {
@@ -805,6 +804,7 @@ class OnzePlexApi
     {
         $plexOrderCollection = $this->plexorder->create()->getCollection()
             ->addFieldToFilter('is_synchronized', ['eq' => false])
+            //->addFieldToFilter('id_magento', ['eq' => '16'])
             ->load();
         $plexOrderToSync_Ids = $plexOrderCollection->getColumnValues('id_magento');
         //var_dump($plexOrderToSync_Ids);
@@ -884,7 +884,7 @@ class OnzePlexApi
             $lineas[] = [
             'codproducto' => $linea['product_sku'],
             'producto' => $linea['product_name'],
-            'cantidad' => $linea['prod_qty'],
+            'cantidad' => (int)$linea['prod_qty'],
             'precio' => $linea['line_amount'],
             'idpromo' => "",
             'promo' => "",
@@ -912,6 +912,8 @@ class OnzePlexApi
             'cupondto_importe' => $magOrder['order_cupon_dto_importe'],
             'productos' => $lineas
             ];
+
+        //return json_encode($data);
         $this->zendClient->resetParameters();
 
         try {
@@ -961,7 +963,6 @@ class OnzePlexApi
             ];
         }
     }
-
     public function informPaymentToPlex()
     {
         /**
@@ -975,29 +976,84 @@ class OnzePlexApi
          */
         $mag_orders_collection = $this->orderCollectionFactory->create()
             ->addAttributeToSelect("*")
+            ->addFieldToFilter('entity_id', ['eq' => '15'])
             ->addFieldToFilter('status', ['eq' => 'sync_plex']);
-
+        $request = [];
         /** @var \Magento\Sales\Model\Order $mag_order */
-        $data = [];
-        foreach ($mag_orders_collection as $mag_order) {
-            if (in_array($mag_order->getPayment()->getMethod(), ['mercadopago_custom','mercadopago_customticket']) and
-                $mag_order->getPayment()->getAdditionalInformation()['paymentResponse']['status'] == 'approved' and
-                $mag_order->getPayment()->getAdditionalInformation()['paymentResponse']['status_detail'] == 'accredited'
-            ) {
-                $this->zendClient->resetParameters();
-
-                $data [] =
-                 [
-                     'id_orden' => $mag_order->getId(),
-                     'increment_id' => $mag_order->getIncrementId(),
-                     'metodo_pago' => $mag_order->getPayment()->getMethod(),
-                     'metodo_total' => $mag_order->getPayment()->getAmountPaid(),
-                     'metodo_codigo' => $mag_order->getPayment()->getAdditionalInformation()['paymentResponse']['id'],
-                     'metodo_status' => $mag_order->getPayment()->getAdditionalInformation()['paymentResponse']['status'],
-                     'metodo_status_detail' => $mag_order->getPayment()->getAdditionalInformation()['paymentResponse']['status_detail']
-                 ];
+        if (!empty($mag_orders_collection)) {
+            $pagos = [];
+            foreach ($mag_orders_collection as $mag_order) {
+                /** Verifico que el pago este realizado por Mercado Pago,
+                 * verifico que este aprovado y acreditado asi abanzo
+                 */
+                if (in_array($mag_order->getPayment()->getMethod(), ['mercadopago_custom','mercadopago_customticket']) and
+                    $mag_order->getPayment()->getAdditionalInformation()['paymentResponse']['status'] == 'approved' and
+                    $mag_order->getPayment()->getAdditionalInformation()['paymentResponse']['status_detail'] == 'accredited'
+                ) {
+                    $this->zendClient->resetParameters();
+                    $plex_order = $this->plexorder->create()->load($mag_order->getId(), 'id_magento');
+                    $pagos [] = [
+                        'idmediodepago' => $this->plex_mercadopago,
+                        'idtarjeta' => "",
+                        'importetotal' => $mag_order->getPayment()->getAdditionalInformation()['total_amount']
+                            - $mag_order->getDiscountAmount()
+                            + $mag_order->getShippingAmount(),
+                        'importedto' => $mag_order->getDiscountAmount(),
+                        'motivodto' => '',
+                        'codoperacion' => $mag_order->getPayment()->getAdditionalInformation()['paymentResponse']['id']
+                    ];
+                    $request = [
+                        'idpedido' => $plex_order->getIdPlex(),
+                        'pagos' => $pagos
+                    ];
+                    $data = [
+                        'request' => [
+                            'type' => 'EC_INFORMARPAGO',
+                            'content' => $request
+                        ]
+                    ];
+                    //return json_encode($data);
+                    try {
+                        $this->zendClient->setUri('http://gralpaz.plexonzecenter.com.ar:8081/onzews');
+                        $this->zendClient->setMethod(ZendClient::POST);
+                        $this->zendClient->setAuth($this->userProd, $this->passwordProd);
+                        $this->zendClient->setHeaders(
+                            [
+                                'Content-Type' => 'application/json',
+                            ]
+                        );
+                        $this->zendClient->setRawData(json_encode($data));
+                        $response = $this->zendClient->request();
+                        $response_array = $this->json->unserialize($response->getBody());
+                        //return $request;
+                        if ($response_array['response']['respcode'] == '0') {
+                            $plex_order->setIsPaymentInformed(true);
+                            $plex_order->save();
+                            $mag_order->setStatus('sync_plex_completed')->setState('complete');
+                            $this->_orderRepository->save($mag_order);
+                            return [
+                                'state' => 'success',
+                                'msg_plex' => $response_array['response']['respmsg']
+                            ];
+                        } else {
+                            return [
+                                'state' => 'error',
+                                'message' => $response_array['response']['respmsg']
+                            ];
+                        }
+                    } catch (\Zend_Http_Client_Exception $e) {
+                        return [
+                           'state' => 'error',
+                           'code' => $e->getCode(),
+                           'message' => $e->getMessage()
+                        ];
+                    }
+                }
             }
         }
-        return $data;
+        return [
+                'status' => 'ok',
+                'msg' => "Nothing to send to Plex"
+            ];
     }
 }
