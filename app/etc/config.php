@@ -236,8 +236,6 @@ return [
         'Amazon_Login' => 1,
         'Amazon_Payment' => 1,
         'Barbanet_ArgentinaRegions' => 1,
-        'Decidir_AdminPlanesCuotas' => 1,
-        'Decidir_SpsDecidir' => 1,
         'Dotdigitalgroup_Email' => 1,
         'Dotdigitalgroup_Chat' => 1,
         'Hidden_Apparel' => 1,

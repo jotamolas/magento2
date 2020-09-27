@@ -176,12 +176,70 @@ class InstallSchema implements InstallSchemaInterface
                 ],
                 'Fecha y Hora de Actualizacion'
             )->addIndex(
-                $setup->getIdxName('jotadevs_op_', ['id']),
+                $setup->getIdxName('jotadevs_op_rubros ', ['id']),
                 ['id']
             )->setComment(
                 'Table of Rubros from OnzePlex'
             );
         $setup->getConnection()->createTable($table_rubros);
+        $setup->endSetup();
+
+        $table_laboratorios = $setup->getConnection()->newTable(
+            $setup->getTable('jotadevs_op_laboratorio')
+        )->addColumn(
+            'id',
+            Table::TYPE_INTEGER,
+            null,
+            [
+                'nullable' => false,
+                'primary' => true,
+                'identity' => true,
+                'auto-increment' => true
+            ],
+            'Id del registro en el modulo'
+        )->addColumn(
+            'name',
+            Table::TYPE_TEXT,
+            20,
+            [
+                'nullable' => false
+            ],
+            'Nombre del Laboratorio'
+        )->addColumn(
+            'is_synchronized',
+            Table::TYPE_BOOLEAN,
+            null,
+            [
+                'nullable' => false,
+                'default' => false
+            ],
+            "Indica si el registro fue sincronizado con Magento"
+        )->addColumn(
+            'created_at',
+            Table::TYPE_TIMESTAMP,
+            null,
+            [
+                'nullable' => false,
+                'default' => \Magento\Framework\DB\Ddl\Table::TIMESTAMP_INIT
+            ],
+            'Fecha y Hora de creación'
+        )->addColumn(
+            'updated_at',
+            Table::TYPE_TIMESTAMP,
+            null,
+            [
+                'nullable' => false,
+                'default' => \Magento\Framework\DB\Ddl\Table::TIMESTAMP_INIT_UPDATE
+            ],
+            'Fecha y Hora de Actualizacion'
+        )->addIndex(
+            $setup->getIdxName('jotadevs_op_laboratorio', ['id']),
+            ['id']
+        )->setComment(
+            'Table of Laboratorios from OnzePlex'
+        );
+
+        $setup->getConnection()->createTable($table_laboratorios);
         $setup->endSetup();
     }
 }

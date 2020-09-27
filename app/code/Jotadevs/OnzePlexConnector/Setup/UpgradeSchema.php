@@ -14,7 +14,6 @@ class UpgradeSchema implements \Magento\Framework\Setup\UpgradeSchemaInterface
      */
     public function upgrade(SchemaSetupInterface $setup, ModuleContextInterface $context)
     {
-        // TODO: Implement upgrade() method.
         $setup->startSetup();
         if (version_compare($context->getVersion(), '1.0.1', '<')) {
             $setup->getConnection()->addColumn(
@@ -115,7 +114,7 @@ class UpgradeSchema implements \Magento\Framework\Setup\UpgradeSchemaInterface
                 $setup->getTable('jotadevs_op_product'),
                 'create_at',
                 [
-                    'type' => Table::TYPE_DATETIME,
+                    'type' => Table::TYPE_TIMESTAMP,
                     'nullable' => false,
                     'comment' => 'Fecha de primer importación desde el ERP',
                     'default' => \Magento\Framework\DB\Ddl\Table::TIMESTAMP_INIT
@@ -125,7 +124,7 @@ class UpgradeSchema implements \Magento\Framework\Setup\UpgradeSchemaInterface
                 $setup->getTable('jotadevs_op_product'),
                 'update_at',
                 [
-                    'type' => Table::TYPE_DATETIME,
+                    'type' => Table::TYPE_TIMESTAMP,
                     'nullable' => false,
                     'comment' => 'Fecha de actualización',
                     'default' => \Magento\Framework\DB\Ddl\Table::TIMESTAMP_INIT_UPDATE
@@ -401,6 +400,30 @@ class UpgradeSchema implements \Magento\Framework\Setup\UpgradeSchemaInterface
                     'default' => false,
                     'comment' => 'Informa si el pago de la orden fue sincronizada en Plex'
 
+                ]
+            );
+        }
+        if (version_compare($context->getVersion(), '1.1.4', '<')) {
+            $setup->getConnection()->addColumn(
+                $setup->getTable('jotadevs_op_product'),
+                'id_laboratorio',
+                [
+                    'type' => Table::TYPE_INTEGER,
+                    'size' => null,
+                    'nullable' => true,
+                    'default' => false,
+                    'comment' => 'Informa el Id de laboratorio del producto'
+
+                ]
+            );
+            $setup->getConnection()->addColumn(
+                $setup->getTable('jotadevs_op_laboratorio'),
+                'id_plex',
+                [
+                    'type' => Table::TYPE_INTEGER,
+                    'size' => null,
+                    'nullable' => false,
+                    'comment' => 'Informa el Id de laboratorio en plex'
                 ]
             );
         }

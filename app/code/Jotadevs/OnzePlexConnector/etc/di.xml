@@ -19,6 +19,9 @@
                 <item name="jotadevs_onzeplexconnector_convert_plex_rubros" xsi:type="object">
                     Jotadevs\OnzePlexConnector\Console\Command\ConvertPlexRubros
                 </item>
+                <item name="jotadevs_onzeplexconnector_import_laboratorios" xsi:type="object">
+                    Jotadevs\OnzePlexConnector\Console\Command\ImportLaboratorios
+                </item>
             </argument>
         </arguments>
     </type>

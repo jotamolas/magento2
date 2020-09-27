@@ -48,6 +48,7 @@ class TestExternalApi extends Command
                 var_dump($this->externalApi->postOrderToPlex($order));
             }
         }*/
+        //$response = $this->externalApi->addCategoryToProduct();
         $response = $this->externalApi->informPaymentToPlex();
         var_dump($response);
         //var_dump($this->externalApi->getMediosPago());

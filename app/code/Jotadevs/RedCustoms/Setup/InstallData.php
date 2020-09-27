@@ -1,6 +1,8 @@
 <?php
 
 namespace Jotadevs\RedCustoms\Setup;
+
+use Magento\Catalog\Model\Product;
 use Magento\Customer\Model\Customer;
 use Magento\Eav\Model\Config;
 use Magento\Eav\Setup\EavSetup;
@@ -38,11 +40,36 @@ class InstallData implements InstallDataInterface
                 'system' => 0
             ]
         );
+        $eavSetup->addAttribute(
+            Product::ENTITY,
+            'laboratorio',
+            [
+              'type' => 'text',
+              'label' => 'Laboratorio',
+              'input' => 'text',
+              'global' => \Magento\Eav\Model\Entity\Attribute\ScopedAttributeInterface::SCOPE_GLOBAL,
+              'required' => false,
+              'user_defined' => false,
+              'comparable' => false,
+              'filterable_in_search' => true,
+              'filterable' => true,
+              'is_filterable_in_grid' => true,
+              'is_used_in_grid' => true,
+              'searchable' => true,
+              'system' => true,
+              'use_for_promo_rules' => true,
+              'visible_in_advanced_search' => true,
+              'visible_on_front' => true,
+              'visible' => true
+          ]
+        );
         $dniAttribute = $this->eavConfig->getAttribute(Customer::ENTITY, 'dni');
         $dniAttribute->setData(
             'used_in_forms',
             ['adminhtml_customer','customer_account_edit']
         );
         $dniAttribute->save();
+        $laboratorioAttribute = $this->eavConfig->getAttribute(Product::ENTITY,'laboratorio');
+        $laboratorioAttribute->save();
     }
 }

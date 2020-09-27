@@ -20,7 +20,7 @@ class ImportRubros extends Command
      */
     protected function configure()
     {
-        $this->setName('jotadevs:op:rubro:imports');
+        $this->setName('jotadevs:op:rubro:import');
         $this->setDescription('This command import Categories and SubCategories from ERP Onze Plex');
         parent::configure();
     }
@@ -37,15 +37,21 @@ class ImportRubros extends Command
     {
         $rubros = $this->onzeplexapi->importRubrosFromPlex();
         $subrubros = $this->onzeplexapi->importSubRubrosFromPlex();
+        $grupos = $this->onzeplexapi->importGruposFromPlex();
         $output->writeln("Importacion de Rubros:");
         $output->writeln("------->Estado: " . $rubros['state']);
         $output->writeln("------->Recibidos: " . $rubros['received']);
         $output->writeln("------->Nuevos:" . $rubros['new']);
-        $output->writeln("------->Mensaje:" . $rubros['message']);
+
         $output->writeln("Importacion de Sub-Rubros:");
         $output->writeln("------->Estado: " . $subrubros['state']);
         $output->writeln("------->Recibidos: " . $subrubros['received']);
         $output->writeln("------->Nuevos:" . $subrubros['new']);
-        $output->writeln("------->Mensaje:" . $subrubros['message']);
+
+        $output->writeln("Importacion de Grupos:");
+        $output->writeln("------->Estado: " . $grupos['state']);
+        $output->writeln("------->Recibidos: " . $grupos['received']);
+        $output->writeln("------->Nuevos:" . $grupos['new']);
+
     }
 }
