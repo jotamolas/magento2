@@ -62,17 +62,21 @@ class storePickup extends AbstractCarrier implements
         $result = $this->_rateResultFactory->create();
         $method = $this->_rateMethodFactory->create();
         $stores = $this->plexApi->getSucursalesPlex();
-        foreach ($stores['result'] as $sucursal) {
-            $store_city = strtolower(preg_replace('/\s+/', '', $sucursal['localidad']));
-            if ($store_city === $dest_city) {
-                $method->setCarrier('storepickup');
-                $method->setCarrierTitle('Retiro en Sucursal ' . $sucursal['nombre'] . ' : ' . $sucursal['domicilio'] . ' Telefono: ' . $sucursal['telefono']);
-                $method->setMethod('storepickup');
-                $method->setMethodTitle('Retiro en Sucursal ' . $sucursal['nombre'] . ' : ' . $sucursal['domicilio'] . ' Telefono: ' . $sucursal['telefono']);
-                $method->setPrice($shippingPrice);
-                $method->setCost($shippingPrice);
-                $result->append($method);
+        if ($stores['state'] != 'error') {
+            foreach ($stores['result'] as $sucursal) {
+                $store_city = strtolower(preg_replace('/\s+/', '', $sucursal['localidad']));
+                if ($store_city === $dest_city) {
+                    $method->setCarrier('storepickup');
+                    $method->setCarrierTitle('Retiro en Sucursal ' . $sucursal['nombre'] . ' : ' . $sucursal['domicilio'] . ' Telefono: ' . $sucursal['telefono']);
+                    $method->setMethod('storepickup');
+                    $method->setMethodTitle('Retiro en Sucursal ' . $sucursal['nombre'] . ' : ' . $sucursal['domicilio'] . ' Telefono: ' . $sucursal['telefono']);
+                    $method->setPrice($shippingPrice);
+                    $method->setCost($shippingPrice);
+                    $result->append($method);
+                }
             }
+        } else {
+            return false;
         }
         return $result;
     }

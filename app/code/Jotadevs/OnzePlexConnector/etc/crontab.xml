@@ -1,0 +1,23 @@
+<?xml version="1.0"  ?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Cron:etc/crontab.xsd">
+    <group id="default">
+        <job name="jotadevs_op_stockUpdate"
+             instance="Jotadevs\OnzePlexConnector\Cron\updateStock"
+             method="updateStock">
+            <schedule>*/5 * * * *</schedule>
+        </job>
+        <job
+            name="jotadevs_op_importNewProducts"
+            instance="Jotadevs\OnzePlexConnector\Cron\importNewProducts"
+            method="importNewProducts">
+            <schedule>*/3 * * * *</schedule>
+        </job>
+        <job
+            name="jotadevs_op_updateProduct"
+            instance="Jotadevs\OnzePlexConnector\Cron\updateProducts"
+            method="updateProducts">
+            <schedule>*/2 * * * *</schedule>
+        </job>
+    </group>
+</config>

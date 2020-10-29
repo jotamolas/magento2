@@ -1,0 +1,7 @@
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
+    <event name="checkout_cart_product_add_before">
+        <observer name="jotadevs_check_stock_on_plex"
+                  instance="Jotadevs\OnzePlexConnector\Observer\CheckStockFromPlex" />
+    </event>
+</config>

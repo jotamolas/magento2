@@ -258,7 +258,6 @@ class OnzePlexApi
             ];
         }
     }
-
     public function getLaboratoriosFromPlex()
     {
         $this->zendClient->resetParameters();
@@ -281,7 +280,6 @@ class OnzePlexApi
             ];
         }
     }
-
     public function getPedidos($id_pedido = 'E00200000005')
     {
         $this->zendClient->resetParameters();
@@ -345,7 +343,7 @@ class OnzePlexApi
                     //verifico si no existe ya en la tabla de op
                     $op_product = $this->plexproduct->create()->load($op_api_product['codproducto'], 'codproduct');
                     if (empty($op_product->toArray())) {
-                        /*si no existe lo cargo TODO VER $op_product... */
+                        /*si no existe lo cargo TODO VER $op_product?? anda... */
                         foreach ($op_api_product as $key => $value) {
                             if ($key == 'codproducto') {
                                 $op_product->setSku($value);
@@ -393,6 +391,59 @@ class OnzePlexApi
             ];
         }
     }
+
+    public function importLaboratoriosFromPlex()
+    {
+        //llamamos a la RestApi del Erp y traemos TODOS los laboratorios.
+        $result = $this->getLaboratoriosFromPlex();
+        //verificar conexion
+        if ($result['state'] == 'success') {
+            //verificar resultados
+            if (!empty($result['result'])) {
+                $op_laboratorios = [];
+                //recorro el array de productos para analizar si ya lo tengo en base
+                foreach ($result['result'] as $op_api_laboratorio) {
+                    //verifico si no existe ya en la tabla de op
+                    /** @var $op_laboratorio PlexLaboratorio */
+                    $op_laboratorio = $this->plexlaboratorio->create()
+                        ->load($op_api_laboratorio['idlaboratorio'], 'id_plex');
+                    if (empty($op_laboratorio->toArray())) {
+                        /*si no existe lo cargo TODO VER $op_product... */
+                        foreach ($op_api_laboratorio as $key => $value) {
+                            ($key == 'idlaboratorio') ? $op_laboratorio->setIdPlex($value) : null;
+                            ($key == 'laboratorio') ? $op_laboratorio->setName($value) : null;
+                        }
+                        $op_laboratorio
+                            ->setIsSynchronized(true)
+                            ->setIsObjectNew(true);
+                        $op_laboratorio->save();
+                        $op_laboratorios[] = $op_laboratorio;
+                    }
+                }
+                return [
+                    'state' => 'success',
+                    'received' => count($result['result']),
+                    'new' => count($op_laboratorios),
+                    'message' => "Se recibieron desde Plex " .
+                        count($result['result']) . "
+                        registros 'Laboratorio', Nuevos ingresados " . count($op_laboratorios)
+                ];
+            } else {
+                return[
+                    'state' => 'success',
+                    'received' => 0,
+                    'new' => 0,
+                    'message' => 'Se recibieron desde Plex 0 registros de Laboratorio'
+                ];
+            }
+        } else {
+            return [
+                'state' => 'error',
+                'message' => "Error al importar desde Plex registros Laboratorios, mensaje " . $result['message']
+            ];
+        }
+    }
+
     public function importRubrosFromPlex()
     {
         //llamamos a la RestApi del Erp y traemos TODOS los productos.
@@ -457,65 +508,6 @@ class OnzePlexApi
             ];
         }
     }
-    public function importLaboratoriosFromPlex()
-    {
-        //llamamos a la RestApi del Erp y traemos TODOS los productos.
-        $result = $this->getLaboratoriosFromPlex();
-        //verificar conexion
-        if ($result['state'] == 'success') {
-            //verificar resultados
-            if (!empty($result['result'])) {
-                $op_laboratorios = [];
-                //recorro el array de productos para analizar si ya lo tengo en base
-                foreach ($result['result'] as $op_api_laboratorio) {
-                    //verifico si no existe ya en la tabla de op
-                    /** @var $op_laboratorio PlexLaboratorio */
-                    $op_laboratorio = $this->plexlaboratorio->create()
-                        ->load($op_api_laboratorio['idlaboratorio'], 'id_plex');
-                    if (empty($op_laboratorio->toArray())) {
-                        /*si no existe lo cargo TODO VER $op_product... */
-                        foreach ($op_api_laboratorio as $key => $value) {
-                            ($key == 'idlaboratorio') ? $op_laboratorio->setIdPlex($value) : null;
-                            ($key == 'laboratorio') ? $op_laboratorio->setName($value) : null;
-                        }
-                        $op_laboratorio
-                            ->setIsSynchronized(true)
-                            ->setIsObjectNew(true);
-                        $op_laboratorio->save();
-                        $op_laboratorios[] = $op_laboratorio;
-                    }
-                }
-                $this->logger->info(
-                    "Se recibieron desde Plex " .
-                    count($result['result']) . "
-                     registros 'Laboratorio', Nuevos ingresados " . count($op_laboratorios)
-                );
-                return [
-                    'state' => 'success',
-                    'received' => count($result['result']),
-                    'new' => count($op_laboratorios)
-                ];
-            } else {
-                $this->logger->info(
-                    "Se recibieron desde Plex 0 registros de Laboratorio"
-                );
-                return[
-                    'state' => 'success',
-                    'received' => 0,
-                    'new' => 0
-                ];
-            }
-        } else {
-            $this->logger->info(
-                "Error al importar desde Plex registros Laboratorios, mensaje " . $result['message']
-            );
-            return [
-                'state' => 'error',
-                'message' => $result['message']
-            ];
-        }
-    }
-
     public function importSubRubrosFromPlex()
     {
         //llamamos a la RestApi del Erp y traemos TODOS los productos.
@@ -555,7 +547,9 @@ class OnzePlexApi
                 return [
                     'state' => 'success',
                     'received' => count($subrubrosApi['result']),
-                    'new' => count($op_sub_rubros)
+                    'new' => count($op_sub_rubros),
+                    'message' => "Estado de importacion: Success, Sub Rubros recibidos:" .
+                        count($subrubrosApi['result']) . " Nuevos:" . count($op_sub_rubros)
                 ];
             } else {
                 $operation
@@ -565,7 +559,8 @@ class OnzePlexApi
                 return[
                     'state' => 'success',
                     'received' => 0,
-                    'new' => 0
+                    'new' => 0,
+                    'message' =>  "Estado de importacion: Success, Subrubros recibidos: 0 Nuevos: 0"
                 ];
             }
         } else {
@@ -623,7 +618,10 @@ class OnzePlexApi
                 return [
                     'state' => 'success',
                     'received' => count($gruposApi['result']),
-                    'new' => count($op_grupos)
+                    'new' => count($op_grupos),
+                    'message' => "Estado de importacion: Success, Grupos recibidos:" .
+                        count($gruposApi['result']) . " Nuevos:" . count($op_grupos)
+
                 ];
             } else {
                 $operation
@@ -633,7 +631,8 @@ class OnzePlexApi
                 return[
                     'state' => 'success',
                     'received' => 0,
-                    'new' => 0
+                    'new' => 0,
+                    'message' => "Estado de importacion: Success, Grupos recibidos: 0 Nuevos: 0"
                 ];
             }
         } else {
@@ -657,7 +656,7 @@ class OnzePlexApi
         //Verifico que existan productos Plex en la tabla
         if (!empty($new_op_products_collection->getColumnValues('id'))) {
             //seteo area de ejecucion como global front y backend
-            $this->state->setAreaCode(\Magento\Framework\App\Area::AREA_GLOBAL);
+            //$this->state->setAreaCode(\Magento\Framework\App\Area::AREA_GLOBAL); lo saco de aca y lo paso al cron
             /** los convierto a productos magento
              *  recorro los nuevos productos obtenidos y por cada uno los inserto
              */
@@ -705,7 +704,7 @@ class OnzePlexApi
         //verifico que haya categorias importados y procedo sino devuelvo mensaje
         if (!empty($new_op_category_collection->getColumnValues('id'))) {
             //seteo area de ejecuccion como global front y backend
-            $this->state->setAreaCode(\Magento\Framework\App\Area::AREA_GLOBAL);
+            //$this->state->setAreaCode(\Magento\Framework\App\Area::AREA_GLOBAL); lo paso al controlador
             /** los convierto a Categorias Magento
              *  recorro los nuevos rubros obtenidos y por cada uno los inserto
              */
@@ -733,16 +732,17 @@ class OnzePlexApi
             return [
                 'state' => 'success',
                 'qty' => count($new_op_category_collection),
-                'message' => 'import success'
+                'message' => 'convertion success'
             ];
         } else {
             return [
                 'state' => 'success',
                 'qty' => 0,
-                'message' => 'nothing for import'
+                'message' => 'nothing for convert'
             ];
         }
     }
+
     public function updateGrupofromPlex()
     {
         $op_products_collection = $this->plexproduct->create()->getCollection()->load();
@@ -803,7 +803,12 @@ class OnzePlexApi
                 $count++;
             }
         }
-        return $count;
+        return
+            [
+                'state' => 'success',
+                'message' => "Products Plex with Group: " . count($op_products_collection) .
+                    " Products with Categories added: " . $count
+            ];
     }
 
     /**
@@ -1021,13 +1026,14 @@ class OnzePlexApi
                 /** Verifico que el pago este realizado por Mercado Pago,
                  * verifico que este aprovado y acreditado asi abanzo
                  */
-                if (in_array($mag_order->getPayment()->getMethod(), ['mercadopago_custom','mercadopago_customticket']) and
+                if (
+                    in_array($mag_order->getPayment()->getMethod(), ['mercadopago_custom','mercadopago_customticket']) and
                     $mag_order->getPayment()->getAdditionalInformation()['paymentResponse']['status'] == 'approved' and
                     $mag_order->getPayment()->getAdditionalInformation()['paymentResponse']['status_detail'] == 'accredited'
                 ) {
-                   /* foreach ($mag_order->getAllVisibleItems() as $item) {
+                    /* foreach ($mag_order->getAllVisibleItems() as $item) {
 
-                    }*/
+                     }*/
                     $this->zendClient->resetParameters();
                     $plex_order = $this->plexorder->create()->load($mag_order->getId(), 'id_magento');
                     $pagos [] = [
@@ -1108,5 +1114,164 @@ class OnzePlexApi
             'status' => 'ok',
             'msg' => "Nothing to send to Plex"
         ];
+    }
+
+    public function getStockFromPlex(array $ids)
+    {
+        $parameters = [];
+        $this->zendClient->resetParameters();
+        $idstring = null;
+        foreach ($ids as $key => $value) {
+            if (array_key_last($ids) == $key) {
+                $idstring .= $value;
+            } else {
+                $idstring .= $value . ',';
+            }
+        }
+        $parameters = array_merge($parameters, ['idproducto' => $idstring, 'idsucursal' => 2]);
+        try {
+            $this->zendClient->setUri($this->uriProd . "ec_getstock");
+            $this->zendClient->setMethod(ZendClient::GET);
+            $this->zendClient->setAuth($this->userProd, $this->passwordProd);
+            $this->zendClient->setParameterGet($parameters);
+            $this->zendClient->setHeaders(
+                [
+                    'Content-Type' => 'application/json'
+                ]
+            );
+            $response = $this->zendClient->request();
+            $response_array = $this->json->unserialize($response->getBody());
+            return [
+                'state' => 'success',
+                'result' => $response_array['response']['content']['productos']
+            ];
+        } catch (\Zend_Http_Client_Exception $e) {
+            return [
+                'state' => 'error',
+                'code' => $e->getCode(),
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+    public function processStockFromPlex(array $plex_stock_rs)
+    {
+        if ($plex_stock_rs['state'] == 'success') {
+            $rs = $plex_stock_rs['result'];
+            //El rs es un array de resultado con el contenido del producto y el stock por sucursal.
+            $productos = [];
+            foreach ($rs as $producto) {
+                $prod = [];
+                $producto_plex = $this->plexproduct->create()->load($producto['codproducto'], 'codproduct');
+                var_dump($producto_plex->getId());
+                foreach ($producto as $key => $value) {
+                    if ($key == 'stock') {
+                        foreach ($value as $stock) {
+                            $prod['cantidad'] = $stock['cantidad'];
+                            $producto_plex->setStock($stock['cantidad']);
+                        }
+                    } else {
+                        $prod[$key] = $value;
+                    }
+                }
+                $producto_plex->save();
+                $productos[] = $prod;
+            }
+            return $productos;
+        } else {
+            return false;
+        }
+    }
+    public function updateStockItem($productos)
+    {
+        foreach ($productos as $producto) {
+            $op_product = $this->plexproduct->create()->load($producto['codproducto'], 'codproduct');
+            /** @var ProductInterface $mag_product */
+            $mag_product = $this->productFactory->create()->load($op_product->getIdMagento());
+            $stockItem = $this->stockRegistry->getStockItemBySku($mag_product->getSku());
+            //var_dump($op_product->getStock());
+            if ($op_product->getStock() > 0) {
+                $stockItem->setIsInStock(true)->setQty($op_product->getStock());
+            } else {
+                $stockItem->setIsInStock(false)->setQty(0);
+            }
+            $stockItem->save();
+            //var_dump($mag_product->getCustomAttribute('laboratorio'));
+            //var_dump($mag_product->getId());
+        }
+        return [
+            'state' => 'success',
+            'qty_product_stock_update' => count($productos)
+        ];
+    }
+
+    /**
+     * Update Info of products
+
+     */
+    public function updateProductsFromPlex()
+    {
+        //busco los productos en base intermedia.
+        $products_to_update = $this->plexproduct->create()->getCollection()
+            ->addFieldToFilter('is_synchronized', ['eq' => true]);
+        //llamamos a la RestApi del Erp y traeos los productos.
+        $result = $this->getProductsOnexPlex(
+            null,
+            $products_to_update->getColumnValues('codproduct')
+        );
+        //si hay resultados proseguimos
+        if ($result['state'] == 'success') {
+            if (!empty($result['result'])) {
+                $op_products = [];
+                //recorro el array de productos para actualizar los datos
+                foreach ($result['result'] as $op_api_product) {
+                    $op_product = $this->plexproduct->create()->load($op_api_product['codproducto'], 'codproduct');
+                    //compruebo?
+                    foreach ($op_api_product as $key => $value) {
+                        ($key == 'precio') ? $op_product->setPrecio($value) : null;
+                        ($key == 'rubro') ? $op_product->setRubro($value) : null;
+                        ($key == 'subrubro') ? $op_product->setSubrubro($value) : null;
+                        ($key == 'idrubro') ? $op_product->setIdrubro($value) : null;
+                        ($key == 'idSubro') ? $op_product->setIdrubro($value) : null;
+                        ($key == 'idlaboratorio') ? $op_product->setIdLaboratorio($value) : null;
+                        if ($key == 'grupos') {
+                            foreach ($value as $gr) {
+                                foreach ($gr as $key_gr => $value_gr) {
+                                    ($key_gr == 'idgrupo') ? $op_product->setIdgrupo($value_gr) : null;
+                                    ($key_gr == 'grupo') ? $op_product->setGrupo($value_gr) : null;
+                                }
+                            }
+                        }
+                    }
+                    $op_product->save();
+                    $op_products[] = $op_product;
+                    $mag_product = $this->productFactory->create()->load($op_product->getIdMagento());
+                    /** @var ProductInterface $mag_product */
+                    $mag_product->setPrice($op_product->getPrecio());
+                    $plex_laboratorio = $this->plexlaboratorio->create()
+                        ->load($op_product->getIdLaboratorio(), 'id_plex');
+                    $mag_product->setCustomAttribute('laboratorio', $plex_laboratorio->getName());
+                    $mag_product = $this->productRepository->save($mag_product);
+                }
+                return [
+                    'state' => 'success',
+                    'received' => count($result['result']),
+                    'new' => count($op_products),
+                    'message' => "Preduct Recived: " . count($result['result']) .
+                        " Products Updated: " . count($op_products)
+                ];
+            } else {
+                return[
+                    'state' => 'success',
+                    'received' => 0,
+                    'new' => 0,
+                    'message' => "Preduct Recived: 0  Products Updated: 0"
+                ];
+            }
+        } else {
+            return [
+                'state' => 'error',
+                'message' => $result['message']
+            ];
+        }
     }
 }
