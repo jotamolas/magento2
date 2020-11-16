@@ -36,8 +36,13 @@ class ImportProducts extends Command
     protected function execute(InputInterface $input, OutputInterface $output): void
     {
         $response =  $this->onzeplexapi->importProductsFromPlex();
-        $output->writeln('Estado: ' . $response['state']);
-        $output->writeln('Productos Recibidos: ' . $response['received']);
-        $output->writeln('Nuevos: ' . $response['new']);
+        if ($response['state'] == 'success') {
+            $output->writeln('Estado: ' . $response['state']);
+            $output->writeln('Productos Recibidos: ' . $response['received']);
+            $output->writeln('Nuevos: ' . $response['new']);
+        } else {
+            $output->writeln('Nuevos: ' . $response['message']);
+        }
+        // var_dump($response);
     }
 }

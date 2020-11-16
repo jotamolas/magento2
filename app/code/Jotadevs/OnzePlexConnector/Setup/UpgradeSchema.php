@@ -427,6 +427,30 @@ class UpgradeSchema implements \Magento\Framework\Setup\UpgradeSchemaInterface
                 ]
             );
         }
+        if (version_compare($context->getVersion(), '1.1.5', '<')) {
+            $setup->getConnection()->addColumn(
+                $setup->getTable('jotadevs_op_product'),
+                'is_op_enabled',
+                [
+                    'type' => Table::TYPE_BOOLEAN,
+                    'nullable' => false,
+                    'comment' => 'Indica si el producto fue habilitado o deshabilitado en Plex'
+
+                ]
+            );
+            $setup->getConnection()->addColumn(
+                $setup->getTable('jotadevs_op_product'),
+                'observations',
+                [
+                    'type' => Table::TYPE_TEXT,
+                    'nullable' => true,
+                    'size' => 500,
+                    'comment' => 'Observaciones de la importacion/actualización'
+
+                ]
+            );
+        }
         $setup->endSetup();
     }
+
 }

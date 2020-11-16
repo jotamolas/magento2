@@ -28,19 +28,32 @@ class updateStock
     public function updateStock()
     {
         //Traigo todos los productos plex sincronizados.
-        $op_products = $this->plex_product->create()->getCollection();
-        $op_products->addFieldToFilter('is_synchronized', ['eq' => true])
-            ->load();
+        $op_products = $this->plex_product->create()->getCollection()
+            ->addFieldToFilter('is_synchronized', ['eq' => true])
+            ->addFieldToFilter('is_op_enabled', ['eq' => true])
+            ->setPageSize(400);
         if (!empty($op_products->getAllIds())) {
-            $stockFromPlex = $this->plex_api->getStockFromPlex($op_products->getColumnValues('codproduct'));
-            if ($stockFromPlex) {
-                $processedProducts = $this->plex_api->processStockFromPlex($stockFromPlex);
+            $pages = $op_products->getLastPageNumber();
+            for ($i = 1; $i <= $pages; $i++) {
+                $op_products = $this->plex_product->create()->getCollection()
+                    ->addFieldToFilter('is_synchronized', ['eq' => true])
+                    ->addFieldToFilter('is_op_enabled', ['eq' => true])
+                    ->setPageSize(400);
+                $this->logger->info(" || Jotadevs Update Stock Product || Comenzando con Página nro.: " . $i);
+                $op_products->setCurPage($i);
+                $this->logger->info(" || Jotadevs Update Stock Product || Consultando el stock de : "
+                    . count($op_products->getColumnValues('sku')) . " productos");
+
+                $stockFromPlex = $this->plex_api->getStockFromPlex($op_products->getColumnValues('codproduct'));
+                $stockFromPlex ?
+                    $processedProducts = $this->plex_api->processStockFromPlex($stockFromPlex) :
+                    $processedProducts = null;
+                $updatedProducts = $this->plex_api->updateStockItem($processedProducts);
+                $this->logger->debug("Cron Job -Jotadevs-StockUpdate -> Se actualizaron los stocks de " .
+                    $updatedProducts['qty_product_stock_update'] .
+                    " productos");
+
             }
-            $updatedProducts = $this->plex_api->updateStockItem($processedProducts);
-            //TODO aca tengo q loguear los resultados...
-            $this->logger->debug("Cron Job -Jotadevs-StockUpdate -> Se actualizaron los stocks de " .
-                $updatedProducts['qty_product_stock_update'] .
-                " productos");
             return $this;
         } else {
             $this->logger->debug("Cron Job -Jotadevs-StockUpdate -> No hay productos para actualizar sus stocks");

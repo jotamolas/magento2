@@ -8,12 +8,8 @@ use Magento\Catalog\Api\Data\CategoryInterfaceFactory;
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Api\Data\ProductInterfaceFactory;
 use Magento\Catalog\Api\ProductRepositoryInterface;
-use Magento\Catalog\Model\Product;
 use Magento\CatalogInventory\Api\StockRegistryInterface;
 use Magento\Customer\Api\CustomerRepositoryInterface;
-use Magento\Framework\Exception\CouldNotSaveException;
-use Magento\Framework\Exception\InputException;
-use Magento\Framework\Exception\StateException;
 use Magento\Framework\HTTP\ZendClient;
 use Magento\Framework\Serialize\Serializer\Json;
 use Magento\Sales\Api\OrderRepositoryInterface;
@@ -96,13 +92,48 @@ class OnzePlexApi
         $this->_orderRepository = $orderRepository;
         $this->logger = $logger;
     }
-
+    /*public function getPromocionesPlex()
+    {
+        $this->zendClient->resetParameters();
+        try {
+            $this->zendClient->setUri($this->uriProd . "ec_getpromociones");
+            $this->zendClient->setMethod(ZendClient::GET);
+            $this->zendClient->setAuth($this->userProd, $this->passwordProd);
+            $this->zendClient->setHeaders(['Content-Type' => 'application/json']);
+            $response = $this->zendClient->request();
+            $response_array = $this->json->unserialize($response->getBody());
+            //var_dump($response_array);
+            //var_dump($response_array['response']['content']['productos']);
+            //var_dump($response_array['response']['content']['totregistros']);
+            return [
+                'state' => 'success',
+                'result' => $response_array['response']['content']['promociones']
+            ];
+        } catch (\Zend_Http_Client_Exception $e) {
+            return [
+                'state' => 'error',
+                'code' => $e->getCode(),
+                'message' => $e->getMessage()
+            ];
+        }
+    }*/
     public function getProductsOnexPlex(\DateTime $fechadecambio = null, array $ids = null)
     {
         $parameters = [];
-        $fechadecambio ? $parameters = array_merge($parameters, ['fechacambio' => $fechadecambio->format('Ymd')]) : null;
-        $ids ? $parameters = array_merge($parameters, ['idproducto' => implode(',', $ids)]) : null;
-        //var_dump($parameters);
+        if ($fechadecambio) {
+            $parameters = array_merge($parameters, ['fechacambio' => $fechadecambio->format('Ymd')]);
+        }
+        if ($ids) {
+            $idstring = null;
+            foreach ($ids as $key => $value) {
+                if (array_key_last($ids) == $key) {
+                    $idstring .= $value;
+                } else {
+                    $idstring .= $value . ',';
+                }
+            }
+            $parameters = array_merge($parameters, ['idproducto' => $idstring]);
+        }
         $this->zendClient->resetParameters();
         try {
             $this->zendClient->setUri($this->uriProd . "ec_getproductos");
@@ -138,6 +169,9 @@ class OnzePlexApi
             $this->zendClient->setHeaders(['Content-Type' => 'application/json']);
             $response = $this->zendClient->request();
             $response_array = $this->json->unserialize($response->getBody());
+            //var_dump($response_array);
+            //var_dump($response_array['response']['content']['productos']);
+            //var_dump($response_array['response']['content']['totregistros']);
             return [
                'state' => 'success',
                'result' => $response_array['response']['content']['rubros']
@@ -153,6 +187,7 @@ class OnzePlexApi
     public function getSubRubrosOnexPlex()
     {
         $this->zendClient->resetParameters();
+        //var_dump($parameters);
         try {
             $this->zendClient->setUri($this->uriProd . "ec_getsubrubros");
             $this->zendClient->setMethod(ZendClient::GET);
@@ -161,6 +196,9 @@ class OnzePlexApi
 
             $response = $this->zendClient->request();
             $response_array = $this->json->unserialize($response->getBody());
+            //var_dump($response_array);
+            //var_dump($response_array['response']['content']['productos']);
+            //var_dump($response_array['response']['content']['totregistros']);
             return [
                 'state' => 'success',
                 'result' => $response_array['response']['content']['subrubros']
@@ -176,6 +214,7 @@ class OnzePlexApi
     public function getGruposPlex()
     {
         $this->zendClient->resetParameters();
+        //var_dump($parameters);
         try {
             $this->zendClient->setUri($this->uriProd . "ec_getgrupos");
             $this->zendClient->setMethod(ZendClient::GET);
@@ -293,59 +332,43 @@ class OnzePlexApi
 
     public function importProductsFromPlex()
     {
-
-        //veo ultima fecha de producto creado para tomar desde esa fehcha productos nuevos
-        $op_last_product = $this->plexproduct->create()->getCollection()->getLastItem();
         //llamamos a la RestApi del Erp y traemos TODOS los productos.
-        if ($op_last_product->isEmpty()) {
-            $result = $this->getProductsOnexPlex();
-        } else {
-            $result = $this->getProductsOnexPlex(\DateTime::createFromFormat('Y-m-d H:i:s', $op_last_product->getCreateAt()));
-        }
+        $result = $this->getProductsOnexPlex();
         //si hay resultados proseguimos
         if ($result['state'] == 'success') {
             if (!empty($result['result'])) {
                 $op_products = [];
                 //recorro el array de productos para analizar si ya lo tengo en base
                 foreach ($result['result'] as $op_api_product) {
-                    //verifico si no existe ya en la tabla de op por id y por nombre por que Plex maneja productos duplicados
-                    $op_product_by_id = $this->plexproduct->create()->load($op_api_product['codproducto'], 'codproduct');
-                    $op_product_by_name = $this->plexproduct->create()->load($op_api_product['producto'], 'producto');
-                    if ($op_product_by_id->isEmpty()) {
-                        if ($op_product_by_name->isEmpty()) {
-                            $op_product = $this->plexproduct->create();
-                            foreach ($op_api_product as $key => $value) {
-                                if ($key == 'codproducto') {
-                                    $op_product->setSku($value);
-                                    $op_product->setCodproduct($value);
-                                }
-                                ($key == 'producto') ? $op_product->setProducto($value) : null;
-                                ($key == 'precio') ? $op_product->setPrecio($value) : null;
-                                ($key == 'rubro') ? $op_product->setRubro($value) : null;
-                                ($key == 'subrubro') ? $op_product->setSubrubro($value) : null;
-                                ($key == 'idrubro') ? $op_product->setIdrubro($value) : null;
-                                ($key == 'idSubro') ? $op_product->setIdrubro($value) : null;
-                                ($key == 'stock') ? $op_product->setStock($value) : null;
-                                ($key == 'idlaboratorio') ? $op_product->setIdLaboratorio($value) : null;
-                                if ($key == 'grupos') {
-                                    foreach ($value as $gr) {
-                                        foreach ($gr as $key_gr => $value_gr) {
-                                            ($key_gr == 'idgrupo') ? $op_product->setIdgrupo($value_gr) : null;
-                                            ($key_gr == 'grupo') ? $op_product->setGrupo($value_gr) : null;
-                                        }
+                    //verifico si no existe ya en la tabla de op
+                    $op_product = $this->plexproduct->create()->load($op_api_product['codproducto'], 'codproduct');
+                    if (empty($op_product->toArray())) {
+                        /*si no existe lo cargo TODO VER $op_product?? anda... */
+                        foreach ($op_api_product as $key => $value) {
+                            if ($key == 'codproducto') {
+                                $op_product->setSku($value);
+                                $op_product->setCodproduct($value);
+                            }
+                            ($key == 'producto') ? $op_product->setProducto($value) : null;
+                            ($key == 'precio') ? $op_product->setPrecio($value) : null;
+                            ($key == 'rubro') ? $op_product->setRubro($value) : null;
+                            ($key == 'subrubro') ? $op_product->setSubrubro($value) : null;
+                            ($key == 'idrubro') ? $op_product->setIdrubro($value) : null;
+                            ($key == 'idSubro') ? $op_product->setIdrubro($value) : null;
+                            ($key == 'stock') ? $op_product->setStock($value) : null;
+                            ($key == 'idlaboratorio') ? $op_product->setIdLaboratorio($value) : null;
+                            if ($key == 'grupos') {
+                                foreach ($value as $gr) {
+                                    foreach ($gr as $key_gr => $value_gr) {
+                                        ($key_gr == 'idgrupo') ? $op_product->setIdgrupo($value_gr) : null;
+                                        ($key_gr == 'grupo') ? $op_product->setGrupo($value_gr) : null;
                                     }
                                 }
                             }
-                            $op_product->setIsObjectNew(true)
-                            ->setIsOpEnabled(true)
-                            ->setObservations("Producto importado el " . date('Y-m-d H:i:s'));
-                            $op_product->save();
-                            $op_products[] = $op_product;
-                        } else {
-                            $this->logger->error("Productos Duplicados ?? - " . $op_api_product['codproducto'] . " - " . $op_api_product['producto']);
                         }
-                    } else {
-                        $this->logger->error("Productos Ya Guardados ?? - " . $op_api_product['codproducto'] . " - " . $op_api_product['producto']);
+                        $op_product->setIsObjectNew(true);
+                        $op_product->save();
+                        $op_products[] = $op_product;
                     }
                 }
 
@@ -622,7 +645,6 @@ class OnzePlexApi
             ];
         }
     }
-
     public function convertToMagentoProduct()
     {
 
@@ -639,37 +661,26 @@ class OnzePlexApi
              *  recorro los nuevos productos obtenidos y por cada uno los inserto
              */
             foreach ($new_op_products_collection as $new_op_product) {
-
-                    /** @var ProductInterface $mag_product */
+                /** @var ProductInterface $mag_product */
                 $mag_product = $this->productFactory->create();
                 $mag_product->setSku($new_op_product->getSku())
-                        ->setName($new_op_product->getProducto())
-                        ->setTypeId(\Magento\Catalog\Model\Product\Type::TYPE_SIMPLE)
-                        ->setVisibility(4)
-                        ->setAttributeSetId(4)
-                        ->setPrice($new_op_product->getPrecio())
-                        ->setStatus(\Magento\Catalog\Model\Product\Attribute\Source\Status::STATUS_ENABLED);
+                    ->setName($new_op_product->getProducto())
+                    ->setTypeId(\Magento\Catalog\Model\Product\Type::TYPE_SIMPLE)
+                    ->setVisibility(4)
+                    ->setAttributeSetId(4)
+                    ->setPrice($new_op_product->getPrecio())
+                    ->setStatus(\Magento\Catalog\Model\Product\Attribute\Source\Status::STATUS_ENABLED);
                 $plex_laboratorio = $this->plexlaboratorio->create()->load($new_op_product->getIdLaboratorio(), 'id_plex');
                 $mag_product->setCustomAttribute('laboratorio', $plex_laboratorio->getName());
-                try {
-                    $mag_product = $this->productRepository->save($mag_product);
-                } catch (CouldNotSaveException $e) {
-                    $this->logger->error("No se Pudo Convertir el producto Plex: " . $new_op_product->getSku() . "Error: " . $e->getMessage());
-                    continue;
-                } catch (InputException $e) {
-                    $this->logger->error("No se Pudo Convertir el producto Plex: " . $new_op_product->getSku() . "Error: " . $e->getMessage());
-                    continue;
-                } catch (StateException $e) {
-                    $this->logger->error("No se Pudo Convertir el producto Plex: " . $new_op_product->getSku() . "Error: " . $e->getMessage());
-                    continue;
-                }
+                
+		$mag_product = $this->productRepository->save($mag_product);
 
                 $stockItem = $this->stockRegistry->getStockItemBySku($mag_product->getSku());
                 $stockItem->setIsInStock(true)->setQty($new_op_product->getStock());
                 $stockItem->save();
                 $new_op_product->setIdMagento($mag_product->getId())
-                        ->setIsSynchronized(true)
-                        ->save();
+                    ->setIsSynchronized(true)
+                    ->save();
             }
             return [
                 'state' => 'success',
@@ -880,470 +891,80 @@ class OnzePlexApi
                     'order_cliente_tdoc' => 'DNI',
                     'order_cliente_doc' => $customer->getCustomAttribute('doc')->getValue(),
                     'order_cliente_domicilio' => $shippingAddress->getStreet(),
-                    'order_cliente_codpostal' => $shippingAddress->getPostcode(),
-                    'order_cliente_ciudad' => $shippingAddress->getCity(),
-                    'order_cliente_provincia' => $shippingAddress->getRegion(),
-                    'order_cliente_telefono' => $shippingAddress->getTelephone(),
-                    'order_observacion' => $observacion,
-                    'order_tipo_entrega' => $tipo_entrega,
-                    'order_tipo_pago' => 'L',
-                    'order_costo_envio' => $magOrder->getShippingAmount(),
-                    'order_cupon_dto_codigo' => $magOrder->getDiscountDescription(),
-                    'order_cupon_dto_importe' => $magOrder->getDiscountAmount(),
-                    'order_amount_total' => $magOrder->getGrandTotal(),
-                    'order_total_items' => $magOrder->getTotalItemCount(),
-                    'lineas' => $line
-                ];
-                $magOrders[] = $rs_order;
+                    'order_cliente_codpostal Busco en tabla intermerdia sin sincronizar y sincronizo con Plex  (post para crear el pedido e informar el pago)
+     *      2.1 Busco todas las ordenes en plexOrder sin estar sincronizadas y traigo desde magento los datos necesarios para sincronizar --> getMagentoOrdersToSync.
+     *      2.2 Envio de a una Post al ws de Plex.     *
+     */
+    public function prepareOrderToSync()
+    {
+        $OrderCollection = $this->orderCollectionFactory->create()
+            ->addFieldToSelect('*')
+            ->addFieldToFilter('status', ['eq' => 'pending']);
+        $orders_syncs = [];
+        foreach ($OrderCollection as $order) {
+            $plexOrder = $this->plexorder->create()->load($order->getId(), 'id_magento');
+            if ($plexOrder->isEmpty()) {
+                $newPlexOrder = $this->plexorder->create();
+                $newPlexOrder->setIdMagento($order->getId())
+                    ->setIsSynchronized(false);
+                $newPlexOrder->setIsObjectNew(true);
+                $newPlexOrder->save();
+                $orders_syncs[] = $newPlexOrder;
             }
-            return  [
-                'status' => 'ok',
-                'orders_to_sync' => $magOrders,
-                'qty_to_sync' => count($magOrders)
-            ];
         }
-        return [
-            'status' => 'ok',
-            'qty_to_sync' => 0
+
+        return[
+          'status' => 'ok',
+          'qty' => count($orders_syncs)
         ];
     }
-    public function postOrderToPlex($magOrder)
+    public function getMagentoOrdersToSync()
     {
-        $lineas = [];
-
-        foreach ($magOrder['lineas'] as $linea) {
-            $lineas[] = [
-            'codproducto' => $linea['product_sku'],
-            'producto' => $linea['product_name'],
-            'cantidad' => (int)$linea['prod_qty'],
-            'precio' => $linea['line_amount'],
-            'idpromo' => "",
-            'promo' => "",
-            'totaldescuento' => $linea['line_total_descuento'],
-            ];
-        }
-        $parameters = [
-            'cli_mail' => $magOrder['order_cliente_mail'],
-            'cli_tdoc' => 'DNI',
-            'cli_doc' => $magOrder['order_cliente_doc'],
-            'cli_nombre' => $magOrder['order_cliente_nombre'],
-            'cli_domicilio' => $magOrder['order_cliente_domicilio'][0],
-            'cli_codpostal' => $magOrder['order_cliente_codpostal'],
-            'cli_localidad' => $magOrder['order_cliente_ciudad'],
-            'cli_provincia' => $magOrder['order_cliente_provincia'],
-            'cli_telefono' => $magOrder['order_cliente_telefono'],
-            'tipoentrega' => $magOrder['order_tipo_entrega'],
-            'tipopago' => $magOrder['order_tipo_pago'],
-            'observacion' => $magOrder['order_observacion'],
-            'idsucursal' => "", //sacarklo de observacion
-            'external_id' => $magOrder['order_id'],
-            'external_sw' => "MAGENTO",
-            'costo_envio' => $magOrder['order_costo_envio'],
-            'cupondto_codigo' => $magOrder['order_cupon_dto_codigo'],
-            'cupondto_importe' => $magOrder['order_cupon_dto_importe'],
-            'productos' => $lineas
-            ];
-
-        //return json_encode($parameters);
-        $this->zendClient->resetParameters();
-
-        try {
-            $this->zendClient->setUri('http://gralpaz.plexonzecenter.com.ar:8081/onzews');
-            $this->zendClient->setMethod(ZendClient::POST);
-            $this->zendClient->setAuth($this->userProd, $this->passwordProd);
-
-            $data = [
-                'request' => [
-                    'type' => 'EC_CREARPEDIDO',
-                    'content' => $parameters
-                ]
-            ];
-            $this->zendClient->setHeaders(
-                [
-                     'Content-Type' => 'application/json',
-                 ]
-            );
-            $this->zendClient->setRawData(json_encode($data));
-            $response = $this->zendClient->request();
-            $response_array = $this->json->unserialize($response->getBody());
-
-            if ($response_array['response']['respcode'] == '0') {
-                $mag_order = $this->_orderRepository->get($magOrder['order_id']);
-                $plex_order = $this->plexorder->create()->load($magOrder['order_id'], 'id_magento');
-                $plex_order
-                   ->setIdPlex($response_array['response']['content']['idpedido'])
-                   ->setIsSynchronized(true);
-                $plex_order->save();
-                $mag_order->setStatus('sync_plex')->setState('procesing');
-                $this->_orderRepository->save($mag_order);
-                return [
-                    'state' => 'success',
-                    'plex_id_pedido' => $response_array['response']['content']['idpedido']
-                ];
-            } else {
-                return [
-                   'state' => 'error',
-                   'message' => $response_array['response']['respmsg']
-                ];
-            }
-        } catch (\Zend_Http_Client_Exception $e) {
-            return [
-               'state' => 'error',
-               'code' => $e->getCode(),
-               'message' => $e->getMessage()
-            ];
-        }
-    }
-    public function informPaymentToPlex()
-    {
-        /**
-         * Este metodo en esta version solo trabaja con MercadoPago
-         * No puedo buscar los medios de pagos... no sirve
-         * tengo que harcodear *** TODO despues metodo de descargar y vincular con mercado pago
-           1. Busco todas las ordenes magento que tienen el estado sync_plex
-         * 2. Recorro las ordenes obtenidas
-         *      2.1 verifico si tiene pago realizado
-         *      2.1 si lo tiene informo pago a plex y actualizo plex y orden magenot a estado completo.
-         */
-        $mag_orders_collection = $this->orderCollectionFactory->create()
-            ->addAttributeToSelect("*")
-            ->addFieldToFilter('status', ['eq' => 'sync_plex']);
-        /*->addFieldToFilter('entity_id', ['eq' => '15'])*/
-        /** @var \Magento\Sales\Model\Order $mag_order */
-        if (!empty($mag_orders_collection)) {
-            $pagos = [];
-            foreach ($mag_orders_collection as $mag_order) {
-                /** Verifico que el pago este realizado por Mercado Pago,
-                 * verifico que este aprovado y acreditado asi abanzo
-                 */
-                if (
-                    in_array($mag_order->getPayment()->getMethod(), ['mercadopago_custom','mercadopago_customticket']) and
-                    $mag_order->getPayment()->getAdditionalInformation()['paymentResponse']['status'] == 'approved' and
-                    $mag_order->getPayment()->getAdditionalInformation()['paymentResponse']['status_detail'] == 'accredited'
-                ) {
-                    /* foreach ($mag_order->getAllVisibleItems() as $item) {
-
-                     }*/
-                    $this->zendClient->resetParameters();
-                    $plex_order = $this->plexorder->create()->load($mag_order->getId(), 'id_magento');
-                    $pagos [] = [
-                        'idmediodepago' => $this->plex_mercadopago,
-                        'idtarjeta' => "",
-                        'importetotal' => $mag_order->getPayment()->getAdditionalInformation()['total_amount'],
-                            //- $mag_order->getDiscountAmount()
-                            //+ $mag_order->getShippingAmount(),
-                        //'importedto' =>  $mag_order->getDiscountAmount(), //TODO CON MERCADO PAGO NO
-                        //'motivodto' => '', // TODO Con mercado pago no se informa esto
-                        'codoperacion' => $mag_order->getPayment()->getAdditionalInformation()['paymentResponse']['id'],
-                        //'pagadoamcdopago' => $mag_order->getPayment()->getAdditionalInformation()['total_amount'],
-                        //'descuento' => $mag_order->getDiscountAmount(),
-                        'envio' => $mag_order->getShippingAmount(),
-                        //'aditionalinfo' => $mag_order->getPayment()->getAdditionalInformation(),
-                        //'additionaldata' =>$mag_order->getPayment()->getAdditionalData()
-                    ];
-                    $request = [
-                        'idpedido' => $plex_order->getIdPlex(),
-                        'pagos' => $pagos
-                    ];
-                    $data = [
-                        'request' => [
-                            'type' => 'EC_INFORMARPAGO',
-                            'content' => $request
-                        ]
-                    ];
-                    //return $data;
-                    try {
-                        $this->zendClient->setUri('http://gralpaz.plexonzecenter.com.ar:8081/onzews');
-                        $this->zendClient->setMethod(ZendClient::POST);
-                        $this->zendClient->setAuth($this->userProd, $this->passwordProd);
-                        $this->zendClient->setHeaders(
-                            [
-                                'Content-Type' => 'application/json',
-                            ]
-                        );
-                        $this->zendClient->setRawData(json_encode($data));
-                        $response = $this->zendClient->request();
-                        $response_array = $this->json->unserialize($response->getBody());
-                        //return $request;
-                        if ($response_array['response']['respcode'] == '0') {
-                            $plex_order->setIsPaymentInformed(true);
-                            $plex_order->save();
-                            $mag_order->setStatus('sync_plex_completed')->setState('complete');
-                            $this->_orderRepository->save($mag_order);
-                            return [
-                                'state' => 'success',
-                                'msg_plex' => $response_array['response']['respmsg']
-                            ];
-                        } else {
-                            return [
-                                'state' => 'error',
-                                'message' => $response_array['response']['respmsg']
-                            ];
-                        }
-                    } catch (\Zend_Http_Client_Exception $e) {
-                        return [
-                           'state' => 'error',
-                           'code' => $e->getCode(),
-                           'message' => $e->getMessage()
+        $plexOrderCollection = $this->plexorder->create()->getCollection()
+            ->addFieldToFilter('is_synchronized', ['eq' => false])
+            //->addFieldToFilter('id_magento', ['eq' => '16'])
+            ->load();
+        $plexOrderToSync_Ids = $plexOrderCollection->getColumnValues('id_magento');
+        //var_dump($plexOrderToSync_Ids);
+        if (!empty($plexOrderToSync_Ids)) {
+            $magOrders = [];
+            $magOrderCollection = $this->orderCollectionFactory->create()
+                ->addAttributeToSelect("*")
+                ->addFieldToFilter('entity_id', ['in' => $plexOrderToSync_Ids]);
+            // var_dump($magOrderCollection->toArray());
+            /** @var \Magento\Sales\Model\Order $magOrder */
+            $rs_order = [];
+            foreach ($magOrderCollection as $magOrder) {
+                $customer = $this->_customerRepository->getById($magOrder->getCustomerId());
+                /** @var \Magento\Sales\Api\Data\OrderAddressInterface $shippingAddress */
+                $shippingAddress = $magOrder->getShippingAddress();
+                $line = [];
+                /** @var \Magento\Sales\Model\Order\Item $item */
+                foreach ($magOrder->getAllVisibleItems() as $item) {
+                    /** @var \Magento\Catalog\Model\Product $product */
+                    $product = $item->getProduct();
+                    if ($product) {
+                        $line [] = [
+                        'line_amount' => $item->getRowTotalInclTax(),
+                        'line_total_descuento' => $item->getDiscountAmount(),
+                        'prod_qty' => $item->getQtyOrdered(),
+                        'qty_ordered' => $item->getOrderId(),
+                        'product_id' => $product->getId(),
+                        'product_sku' => $product->getSku(),
+                        'product_name' => $product->getName()
                         ];
-                    }
-                } else {
-                    return [
-                        'status' => 'ok',
-                        'msg' => "Nothing to send to Plex"
-                    ];
-                }
-            }
-        } else {
-            return [
-                'status' => 'ok',
-                'msg' => "Nothing to send to Plex"
-            ];
-        }
-        return [
-            'status' => 'ok',
-            'msg' => "Nothing to send to Plex"
-        ];
-    }
-
-    /**
-     * Actualizacion de Stock
-     *  1. Get Stock From Plex va a obtener el stock de los productos desde la Api de Plex
-     *  2. processStock from plex toma como entrada el resultset de una consulta de stock
-     *  3. update stock toma arrat de productos plex (q devuelve process stock)
-     */
-    public function getStockFromPlex(array $ids)
-    {
-        $parameters = [];
-        $this->zendClient->resetParameters();
-        $idstring = null;
-        foreach ($ids as $key => $value) {
-            if (array_key_last($ids) == $key) {
-                $idstring .= $value;
-            } else {
-                $idstring .= $value . ',';
-            }
-        }
-        $parameters = array_merge($parameters, ['idproducto' => $idstring, 'idsucursal' => 2]);
-        try {
-            $this->zendClient->setUri($this->uriProd . "ec_getstock");
-            $this->zendClient->setMethod(ZendClient::GET);
-            $this->zendClient->setAuth($this->userProd, $this->passwordProd);
-            $this->zendClient->setParameterGet($parameters);
-            $this->zendClient->setHeaders(
-                [
-                    'Content-Type' => 'application/json'
-                ]
-            );
-            $response = $this->zendClient->request();
-            $response_array = $this->json->unserialize($response->getBody());
-            return [
-                'state' => 'success',
-                'result' => $response_array['response']['content']['productos']
-            ];
-        } catch (\Zend_Http_Client_Exception $e) {
-            return [
-                'state' => 'error',
-                'code' => $e->getCode(),
-                'message' => $e->getMessage()
-            ];
-        }
-    }
-    public function processStockFromPlex(array $plex_stock_rs)
-    {
-        if ($plex_stock_rs['state'] == 'success') {
-            $rs = $plex_stock_rs['result'];
-            //El rs es un array de resultado con el contenido del producto y el stock por sucursal.
-            $productos = [];
-            foreach ($rs as $producto) {
-                $prod = [];
-                $producto_plex = $this->plexproduct->create()->load($producto['codproducto'], 'codproduct');
-                var_dump($producto_plex->getId());
-                foreach ($producto as $key => $value) {
-                    if ($key == 'stock') {
-                        foreach ($value as $stock) {
-                            $prod['cantidad'] = $stock['cantidad'];
-                            $producto_plex->setStock($stock['cantidad']);
-                        }
                     } else {
-                        $prod[$key] = $value;
+                        var_dump($item->getName());
                     }
                 }
-                $producto_plex->save();
-                $productos[] = $prod;
-            }
-            return $productos;
-        } else {
-            return false;
-        }
-    }
-    public function updateStockItem($productos)
-    {
-        foreach ($productos as $producto) {
-            $op_product = $this->plexproduct->create()->load($producto['codproducto'], 'codproduct');
-            /** @var ProductInterface $mag_product */
-            $mag_product = $this->productFactory->create()->load($op_product->getIdMagento());
-            $stockItem = $this->stockRegistry->getStockItemBySku($mag_product->getSku());
-            //var_dump($op_product->getStock());
-            if ($op_product->getStock() > 0) {
-                $stockItem->setIsInStock(true)->setQty($op_product->getStock());
-            } else {
-                $stockItem->setIsInStock(false)->setQty(0);
-            }
-            $stockItem->save();
-            //var_dump($mag_product->getCustomAttribute('laboratorio'));
-            //var_dump($mag_product->getId());
-        }
-        return [
-            'state' => 'success',
-            'qty_product_stock_update' => count($productos)
-        ];
-    }
-
-    /**
-     * Update Info of products
-     */
-    public function updateProductsFromPlex()
-    {
-        //busco los productos en base intermedia.
-        $products_to_update = $this->plexproduct->create()->getCollection()
-            ->addFieldToFilter('is_synchronized', ['eq' => true])
-            ->setPageSize(400);
-        $pages = $products_to_update->getLastPageNumber();
-        $messages = [];
-        for ($i = 1; $i <= $pages; $i++) {
-            $products_to_update = $this->plexproduct->create()->getCollection()
-                ->addFieldToFilter('is_synchronized', ['eq' => true])
-                ->setPageSize(400);
-            $this->logger->info(" || Jotadevs Update Product || Comenzando con Página nro.: " . $i);
-            $products_to_update->setCurPage($i);
-            $this->logger->info(" || Jotadevs Update Product || Corroboro Página nro.: "
-                . $products_to_update->getCurPage());
-            $this->logger->info(" || Jotadevs Update Product || Cantidad de Productos a consultar: "
-                . count($products_to_update->getColumnValues('codproduct')));
-            //llamamos a la RestApi del Erp y traeos los productos.
-            $result = $this->getProductsOnexPlex(
-                null,
-                $products_to_update->getColumnValues('codproduct')
-            );
-            //Verifico que la conexion con la API
-            if ($result['state'] == 'success') {
-                //Verifico que vuelvan resultados
-                if (!empty($result['result'])) {
-                    $op_products = [];
-                    $op_products_codes = [];
-                    //recorro el array de productos para actualizar los datos
-                    foreach ($result['result'] as $op_api_product) {
-                        $op_product = $this->plexproduct->create()->load($op_api_product['codproducto'], 'codproduct');
-
-                        foreach ($op_api_product as $key => $value) {
-                            ($key == 'codproducto') ? array_push($op_products_codes, $value) : false; //pongo en codigo
-                            ($key == 'precio') ? $op_product->setPrecio($value) : null;
-                            ($key == 'rubro') ? $op_product->setRubro($value) : null;
-                            ($key == 'subrubro') ? $op_product->setSubrubro($value) : null;
-                            ($key == 'idrubro') ? $op_product->setIdrubro($value) : null;
-                            ($key == 'idSubro') ? $op_product->setIdrubro($value) : null;
-                            ($key == 'idlaboratorio') ? $op_product->setIdLaboratorio($value) : null;
-                            if ($key == 'grupos') {
-                                foreach ($value as $gr) {
-                                    foreach ($gr as $key_gr => $value_gr) {
-                                        ($key_gr == 'idgrupo') ? $op_product->setIdgrupo($value_gr) : null;
-                                        ($key_gr == 'grupo') ? $op_product->setGrupo($value_gr) : null;
-                                    }
-                                }
-                            }
-                        }
-                        $op_product->setIsOpEnabled(true);
-                        $op_product->save();
-                        $op_products[] = $op_product;
-
-                        //Actualización en el Producto Magento
-                        /** @var ProductInterface $mag_product */
-                        $mag_product = $this->productFactory->create()->load($op_product->getIdMagento());
-                        $mag_product->setPrice($op_product->getPrecio())
-                                    ->setStatus(Product\Attribute\Source\Status::STATUS_ENABLED);
-                        $plex_laboratorio = $this->plexlaboratorio->create()
-                            ->load($op_product->getIdLaboratorio(), 'id_plex');
-                        $mag_product->setCustomAttribute('laboratorio', $plex_laboratorio->getName());
-                        $this->productRepository->save($mag_product);
-                    }
-                    // Verifico los productos que cambiaron el estado de publicados en Plex. Como?
-                    // Comparando los que envíe y los qye recibí
-                    $products_to_disabled = array_diff(
-                        $products_to_update->getColumnValues('codproduct'),
-                        $op_products_codes
-                    );
-                    if (count($products_to_disabled) > 0) {
-                        foreach ($products_to_disabled as $product_to_disable) {
-                            $this->logger->info(" || Jotadevs Update Product || Deshabilitando producto: "
-                                . $product_to_disable);
-                            //cambio en Modelo Plex
-                            $op_product_to_disabled = $this->plexproduct->create()
-                                ->load($product_to_disable, 'codproduct')
-                                ->setIsOpEnabled(false);
-                            $op_product_to_disabled
-                                ->setObservations($op_product_to_disabled->getObservations() .
-                                    " | Producto desactivado desde Plex el " . date('Y-m-d H:i:s'))
-                                ->save();
-
-                            //actualizo en Magento el status
-                            /** @var ProductInterface $mag_product_to_disabled */
-                            $mag_product_to_disabled = $this->productRepository->get(
-                                $op_product_to_disabled->getSku(),
-                                true,
-                                0,
-                                true
-                            );
-                            $mag_product_to_disabled->setStatus(Product\Attribute\Source\Status::STATUS_DISABLED);
-                            $this->logger->info(" || Jotadevs Update Product || Deshabilitando en Magento producto: "
-                                . $mag_product_to_disabled->getId() . " - >>" . $mag_product_to_disabled->getStatus());
-                            $this->productRepository->save($mag_product_to_disabled);
-                        }
-
-                    }
-
-                    $message = " Products Sended: " . count($products_to_update->getColumnValues('codproduct')) .
-                               " Products Received: " . count($result['result']) .
-                               " Products Updated: " . count($op_products) .
-                               " Products Disabled: " . count(
-                                   array_diff(
-                                       $products_to_update->getColumnValues('codproduct'),
-                                       $op_products_codes
-                                   )
-                               );
-                    $this->logger->info(" || Jotadevs Update Product || " . $message);
-                    $messages [] = [
-                        'page ' . $i => [
-                            'state' => 'success',
-                            'received' => count($result['result']),
-                            'new' => count($op_products),
-                            'message' => $messages
-                        ]
-                    ];
-                } else {
-                    $message = "Product Received: 0  Products Updated: 0";
-                    $this->logger->info(" || Jotadevs Update Product || " . $message);
-                    $messages[] = [
-                        'page ' . $i => [
-                            'state' => 'success',
-                            'received' => 0,
-                            'new' => 0,
-                            'message' => $message
-                        ]
-                    ];
-                }
-            } else {
-                $this->logger->info(" || Jotadevs Update Product || " . $result['message']);
-                $messages[] = [
-                    'page ' . $i => [
-                        'state' => 'error',
-                        'message' => $result['message']
-                    ]
-                ];
-            }
-        }
-        return $messages;
-    }
-
-
-}
+                ($magOrder->getShippingMethod() == 'storepickup_') ? $tipo_entrega = 'R' : $tipo_entrega = 'E';
+                ($magOrder->getShippingMethod() == 'storepickup_') ? $observacion = $magOrder->getShippingDescription() : $observacion = null;
+                //TODO ver el id de sucursal
+                $rs_order = [
+                    'order_id' => $magOrder->getId(),
+                    'order_cliente_nombre' => $magOrder->getCustomerName(),
+                    'order_cliente_mail' => $magOrder->getCustomerEmail(),
+                    'order_cliente_tdoc' => 'DNI',
+                    'order_cliente_doc' => $customer->getCustomAttribute('doc')->getValue(),
+                    'order_cliente_domicilio' => $shippingAddress->getStreet(),
+                    'order_cliente_codpostal
