@@ -30,10 +30,8 @@ class updateProducts
         //$this->state->setAreaCode(\Magento\Framework\App\Area::AREA_GLOBAL);
         // Traigo todos los productos Plex ya sincronizados.
         $this->logger->debug('||Jotadevs-Cron-UpdateProducts|| Updating Products');
-        $products_plex_updated = $this->plex_api->updateProductsFromPlex();
-        $products_add_categories = $this->plex_api->addCategoryToProduct();
-        $this->logger->debug('||Jotadevs-Cron-UpdateProducts|| Add Categories --> ' . $products_add_categories['message']);
-        $this->logger->debug('||Jotadevs-Cron-UpdateProducts|| Updated --> ' . $products_plex_updated['message']);
+        $this->plex_api->updateProductsFromPlex();
+        //$this->logger->debug('||Jotadevs-Cron-UpdateProducts|| Updated --> ' . $products_plex_updated['message']);
         return $this;
     }
 }

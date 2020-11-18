@@ -12,8 +12,6 @@ use Magento\Catalog\Model\Product;
 use Magento\CatalogInventory\Api\StockRegistryInterface;
 use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Framework\Exception\CouldNotSaveException;
-use Magento\Framework\Exception\InputException;
-use Magento\Framework\Exception\StateException;
 use Magento\Framework\HTTP\ZendClient;
 use Magento\Framework\Serialize\Serializer\Json;
 use Magento\Sales\Api\OrderRepositoryInterface;
@@ -196,7 +194,8 @@ class OnzePlexApi
             ];
         }
     }
-    public function getSucursalesPlex()
+
+    /*public function getSucursalesPlex()
     {
         $this->zendClient->resetParameters();
         try {
@@ -218,7 +217,7 @@ class OnzePlexApi
                 'message' => $e->getMessage()
             ];
         }
-    }
+    }*/
     public function getLaboratoriosFromPlex()
     {
         $this->zendClient->resetParameters();
@@ -241,7 +240,7 @@ class OnzePlexApi
             ];
         }
     }
-    public function getPedidos($id_pedido = 'E00200000005')
+    /*public function getPedidos($id_pedido = 'E00200000005')
     {
         $this->zendClient->resetParameters();
         try {
@@ -266,30 +265,30 @@ class OnzePlexApi
                 'message' => $e->getMessage()
             ];
         }
-    }
-    public function getMediosPago()
-    {
-        $this->zendClient->resetParameters();
-        try {
-            $this->zendClient->setUri($this->uriProd . "ec_getmediosdepago");
-            $this->zendClient->setMethod(ZendClient::GET);
-            $this->zendClient->setAuth($this->userProd, $this->passwordProd);
-            $this->zendClient->setHeaders(['Content-Type' => 'application/json']);
+    }*/
+    /* public function getMediosPago()
+     {
+         $this->zendClient->resetParameters();
+         try {
+             $this->zendClient->setUri($this->uriProd . "ec_getmediosdepago");
+             $this->zendClient->setMethod(ZendClient::GET);
+             $this->zendClient->setAuth($this->userProd, $this->passwordProd);
+             $this->zendClient->setHeaders(['Content-Type' => 'application/json']);
 
-            $response = $this->zendClient->request();
-            $response_array = $this->json->unserialize($response->getBody());
-            return [
-                'state' => 'success',
-                'result' => $response_array['response']['content']['medios']
-            ];
-        } catch (\Zend_Http_Client_Exception $e) {
-            return [
-                'state' => 'error',
-                'code' => $e->getCode(),
-                'message' => $e->getMessage()
-            ];
-        }
-    }
+             $response = $this->zendClient->request();
+             $response_array = $this->json->unserialize($response->getBody());
+             return [
+                 'state' => 'success',
+                 'result' => $response_array['response']['content']['medios']
+             ];
+         } catch (\Zend_Http_Client_Exception $e) {
+             return [
+                 'state' => 'error',
+                 'code' => $e->getCode(),
+                 'message' => $e->getMessage()
+             ];
+         }
+     }*/
 
     public function importProductsFromPlex()
     {
@@ -421,71 +420,82 @@ class OnzePlexApi
         }
     }
 
-    public function importRubrosFromPlex()
-    {
-        //llamamos a la RestApi del Erp y traemos TODOS los productos.
-        $rubrosApi = $this->getRubrosOnexPlex();
-        $operation = $this->plexoperation->create()
-            ->setName("Obtener Rubros desde OnzePlex")
-            ->setCode("GROP");
-        //si hay resultados de rubros proseguimos
-        if ($rubrosApi['state'] == 'success') {
-            if (!empty($rubrosApi['result'])) {
-                $op_rubros = [];
-                //recorro el array de rubros para analizar si ya lo tengo en base
-                foreach ($rubrosApi['result'] as $op_api_rubro) {
-                    //verifico si no existe ya en la tabla de op
-                    $op_category = $this->plexcategory->create()->load($op_api_rubro['idrubro'], 'id_plex');
-                    if (empty($op_category->toArray())) {
-                        //si no existe lo cargo de vuelta
-                        foreach ($op_api_rubro as $key => $value) {
-                            ($key == 'idrubro') ? $op_category->setIdPlex($value) : null;
-                            ($key == 'rubro') ? $op_category->setName($value) : null;
-                        }
-                        $op_category->setIsObjectNew(true);
-                        $op_category->save();
-                        $op_rubros[] = $op_category;
-                    }
-                }
-                $operation
-                    ->setMessage(
-                        "Estado de importacion: Success, Rubros recibidos:" .
-                        count($rubrosApi['result']) . " Nuevos:" . count($op_rubros)
-                    )->setLastId()
-                    ->setIsObjetNew(true)
-                    ->save();
-                return [
-                    'state' => 'success',
-                    'received' => count($rubrosApi['result']),
-                    'new' => count($op_rubros),
-                    'message' => "Estado de importacion: Success, Rubros recibidos:" .
-                        count($rubrosApi['result']) . " Nuevos:" . count($op_rubros)
-                ];
-            } else {
-                $operation
-                    ->setMessage("Estado de importacion: Success, Productos rubros y subrubros recibidos: 0 Nuevos: 0")
-                    ->setIsObjetNew(true)
-                    ->save();
-                return[
-                    'state' => 'success',
-                    'received' => 0,
-                    'new' => 0,
-                    'message' => "Estado de importacion: Success, Productos rubros: 0 Nuevos: 0"
-                ];
-            }
-        } else {
-            $operation->setMessage("Estado de importacion: Error, Mensaje de Error:" . $rubrosApi['message']);
-            $operation->setIsObjetNew(true);
-            $operation->save();
-            return [
-                'state' => 'error',
-                'received' => 0,
-                'new' => 0,
-                'message' => $rubrosApi['message']
-            ];
-        }
-    }
-    public function importSubRubrosFromPlex()
+    /**
+     * @return array
+     * @throws \Exception
+     * Este metodo se depreca se cambiara por las categorias Plex
+     */
+    /* public function importRubrosFromPlex()
+     {
+         //llamamos a la RestApi del Erp y traemos TODOS los productos.
+         $rubrosApi = $this->getRubrosOnexPlex();
+         $operation = $this->plexoperation->create()
+             ->setName("Obtener Rubros desde OnzePlex")
+             ->setCode("GROP");
+         //si hay resultados de rubros proseguimos
+         if ($rubrosApi['state'] == 'success') {
+             if (!empty($rubrosApi['result'])) {
+                 $op_rubros = [];
+                 //recorro el array de rubros para analizar si ya lo tengo en base
+                 foreach ($rubrosApi['result'] as $op_api_rubro) {
+                     //verifico si no existe ya en la tabla de op
+                     $op_category = $this->plexcategory->create()->load($op_api_rubro['idrubro'], 'id_plex');
+                     if (empty($op_category->toArray())) {
+                         //si no existe lo cargo de vuelta
+                         foreach ($op_api_rubro as $key => $value) {
+                             ($key == 'idrubro') ? $op_category->setIdPlex($value) : null;
+                             ($key == 'rubro') ? $op_category->setName($value) : null;
+                         }
+                         $op_category->setIsObjectNew(true);
+                         $op_category->save();
+                         $op_rubros[] = $op_category;
+                     }
+                 }
+                 $operation
+                     ->setMessage(
+                         "Estado de importacion: Success, Rubros recibidos:" .
+                         count($rubrosApi['result']) . " Nuevos:" . count($op_rubros)
+                     )->setLastId()
+                     ->setIsObjetNew(true)
+                     ->save();
+                 return [
+                     'state' => 'success',
+                     'received' => count($rubrosApi['result']),
+                     'new' => count($op_rubros),
+                     'message' => "Estado de importacion: Success, Rubros recibidos:" .
+                         count($rubrosApi['result']) . " Nuevos:" . count($op_rubros)
+                 ];
+             } else {
+                 $operation
+                     ->setMessage("Estado de importacion: Success, Productos rubros y subrubros recibidos: 0 Nuevos: 0")
+                     ->setIsObjetNew(true)
+                     ->save();
+                 return[
+                     'state' => 'success',
+                     'received' => 0,
+                     'new' => 0,
+                     'message' => "Estado de importacion: Success, Productos rubros: 0 Nuevos: 0"
+                 ];
+             }
+         } else {
+             $operation->setMessage("Estado de importacion: Error, Mensaje de Error:" . $rubrosApi['message']);
+             $operation->setIsObjetNew(true);
+             $operation->save();
+             return [
+                 'state' => 'error',
+                 'received' => 0,
+                 'new' => 0,
+                 'message' => $rubrosApi['message']
+             ];
+         }
+     }*/
+
+    /**
+     * @return array
+     * @throws \Exception
+     * Este metodo se depreca se cambian por categorias de plex
+     */
+    /*public function importSubRubrosFromPlex()
     {
         //llamamos a la RestApi del Erp y traemos TODOS los productos.
         $subrubrosApi = $this->getSubRubrosOnexPlex();
@@ -549,83 +559,88 @@ class OnzePlexApi
                 'message' => $subrubrosApi['message']
             ];
         }
-    }
-    public function importGruposFromPlex()
-    {
-        //llamamos a la RestApi del Erp y traemos TODOS los grupos.
-        $gruposApi = $this->getGruposPlex();
-        $operation = $this->plexoperation->create()
-            ->setName("Obtener Grupos desde OnzePlex")
-            ->setCode("GGOP");
-        //si hay resultados de rubros proseguimos
-        if ($gruposApi['state'] == 'success') {
-            if (!empty($gruposApi['result'])) {
-                $op_grupos = [];
-                //recorro el array de rubros para analizar si ya lo tengo en base
-                foreach ($gruposApi['result'] as $op_api_grupo) {
-                    //verifico si no existe ya en la tabla de op
-                    //VER ESTO
-                    $op_category = $this->plexcategory->create();
-                    $op_category_collection = $this->plexcategory->create()->getCollection();
-                    $op_category_collection
-                        ->addFieldToFilter('is_plex_group', ['eq' => true])
-                        ->addFieldToFilter('id_plex', ['eq' => $op_api_grupo['idgrupo']])
-                        ->load();
-                    $items = $op_category_collection->toArray();
-                    if (empty($items['items'])) {
-                        //si no existe lo cargo de vuelta
-                        foreach ($op_api_grupo as $key => $value) {
-                            ($key == 'idgrupo') ? $op_category->setIdPlex($value) : null;
-                            ($key == 'grupo') ? $op_category->setName($value) : null;
-                        }
-                        $op_category->setIsChild(true);
-                        $op_category->setIsPlexGroup(true);
-                        $op_category->setIsObjectNew(true);
-                        $op_category->save();
-                        $op_grupos[] = $op_category;
-                    }
-                }
-                $operation
-                     ->setMessage(
-                         "Estado de importacion: Success, Grupos recibidos:" .
-                         count($gruposApi['result']) . " Nuevos:" . count($op_grupos)
-                     )->setLastId()
-                     ->setIsObjetNew(true)
-                     ->save();
-                return [
-                    'state' => 'success',
-                    'received' => count($gruposApi['result']),
-                    'new' => count($op_grupos),
-                    'message' => "Estado de importacion: Success, Grupos recibidos:" .
-                        count($gruposApi['result']) . " Nuevos:" . count($op_grupos)
+    }*/
 
-                ];
+    /**
+     * @return array
+     * @throws \Exception
+     * Este metodo tiene que deprecarse.. cambiara por las categorias nuevas de Plex
+     */
+    /*    public function importGruposFromPlex()
+        {
+            //llamamos a la RestApi del Erp y traemos TODOS los grupos.
+            $gruposApi = $this->getGruposPlex();
+            $operation = $this->plexoperation->create()
+                ->setName("Obtener Grupos desde OnzePlex")
+                ->setCode("GGOP");
+            //si hay resultados de rubros proseguimos
+            if ($gruposApi['state'] == 'success') {
+                if (!empty($gruposApi['result'])) {
+                    $op_grupos = [];
+                    //recorro el array de rubros para analizar si ya lo tengo en base
+                    foreach ($gruposApi['result'] as $op_api_grupo) {
+                        //verifico si no existe ya en la tabla de op
+                        //VER ESTO
+                        $op_category = $this->plexcategory->create();
+                        $op_category_collection = $this->plexcategory->create()->getCollection();
+                        $op_category_collection
+                            ->addFieldToFilter('is_plex_group', ['eq' => true])
+                            ->addFieldToFilter('id_plex', ['eq' => $op_api_grupo['idgrupo']])
+                            ->load();
+                        $items = $op_category_collection->toArray();
+                        if (empty($items['items'])) {
+                            //si no existe lo cargo de vuelta
+                            foreach ($op_api_grupo as $key => $value) {
+                                ($key == 'idgrupo') ? $op_category->setIdPlex($value) : null;
+                                ($key == 'grupo') ? $op_category->setName($value) : null;
+                            }
+                            $op_category->setIsChild(true);
+                            $op_category->setIsPlexGroup(true);
+                            $op_category->setIsObjectNew(true);
+                            $op_category->save();
+                            $op_grupos[] = $op_category;
+                        }
+                    }
+                    $operation
+                         ->setMessage(
+                             "Estado de importacion: Success, Grupos recibidos:" .
+                             count($gruposApi['result']) . " Nuevos:" . count($op_grupos)
+                         )->setLastId()
+                         ->setIsObjetNew(true)
+                         ->save();
+                    return [
+                        'state' => 'success',
+                        'received' => count($gruposApi['result']),
+                        'new' => count($op_grupos),
+                        'message' => "Estado de importacion: Success, Grupos recibidos:" .
+                            count($gruposApi['result']) . " Nuevos:" . count($op_grupos)
+
+                    ];
+                } else {
+                    $operation
+                        ->setMessage("Estado de importacion: Success, Grupos recibidos: 0 Nuevos: 0")
+                        ->setIsObjetNew(true)
+                        ->save();
+                    return[
+                        'state' => 'success',
+                        'received' => 0,
+                        'new' => 0,
+                        'message' => "Estado de importacion: Success, Grupos recibidos: 0 Nuevos: 0"
+                    ];
+                }
             } else {
-                $operation
-                    ->setMessage("Estado de importacion: Success, Grupos recibidos: 0 Nuevos: 0")
-                    ->setIsObjetNew(true)
-                    ->save();
-                return[
-                    'state' => 'success',
-                    'received' => 0,
-                    'new' => 0,
-                    'message' => "Estado de importacion: Success, Grupos recibidos: 0 Nuevos: 0"
+                $operation->setMessage("Estado de importacion: Error, Mensaje de Error:" . $gruposApi['message']);
+                $operation->setIsObjetNew(true);
+                $operation->save();
+                return [
+                    'state' => 'error',
+                    'message' => $gruposApi['message']
                 ];
             }
-        } else {
-            $operation->setMessage("Estado de importacion: Error, Mensaje de Error:" . $gruposApi['message']);
-            $operation->setIsObjetNew(true);
-            $operation->save();
-            return [
-                'state' => 'error',
-                'message' => $gruposApi['message']
-            ];
-        }
-    }
+        }*/
 
     public function convertToMagentoProduct()
     {
-
         //Busco todos los productos obtenidos en OnexPlex filtrando por los no sincronizados
         $new_op_products_collection = $this->plexproduct->create()->getCollection();
         $new_op_products_collection
@@ -649,18 +664,18 @@ class OnzePlexApi
                         ->setAttributeSetId(4)
                         ->setPrice($new_op_product->getPrecio())
                         ->setStatus(\Magento\Catalog\Model\Product\Attribute\Source\Status::STATUS_ENABLED);
-                $plex_laboratorio = $this->plexlaboratorio->create()->load($new_op_product->getIdLaboratorio(), 'id_plex');
-                $mag_product->setCustomAttribute('laboratorio', $plex_laboratorio->getName());
+                $plex_laboratorio = $this->plexlaboratorio->create()
+                    ->load($new_op_product->getIdLaboratorio(), 'id_plex');
+                $mag_product
+                    ->setCustomAttribute('laboratorio', $plex_laboratorio->getName())
+                    ->setCustomAttribute('rubro_plex', $new_op_product->getRubro())
+                    ->setCustomAttribute('subrubro_plex', $new_op_product->getSubrubro())
+                    ->setCustomAttribute('grupo_plex', $new_op_product->getGrupo());
                 try {
                     $mag_product = $this->productRepository->save($mag_product);
                 } catch (CouldNotSaveException $e) {
-                    $this->logger->error("No se Pudo Convertir el producto Plex: " . $new_op_product->getSku() . "Error: " . $e->getMessage());
-                    continue;
-                } catch (InputException $e) {
-                    $this->logger->error("No se Pudo Convertir el producto Plex: " . $new_op_product->getSku() . "Error: " . $e->getMessage());
-                    continue;
-                } catch (StateException $e) {
-                    $this->logger->error("No se Pudo Convertir el producto Plex: " . $new_op_product->getSku() . "Error: " . $e->getMessage());
+                    $this->logger->error("No se Pudo Convertir el producto Plex: " .
+                        $new_op_product->getSku() . "Error: " . $e->getMessage());
                     continue;
                 }
 
@@ -684,7 +699,13 @@ class OnzePlexApi
             ];
         }
     }
-    public function convertToMagentoCategory()
+
+    /**
+     * @return array
+     * @throws CouldNotSaveException
+     * Este metodo se depreca se cambiara por nuevas categorias de Plex
+     */
+    /*public function convertToMagentoCategory()
     {
         //Busco todos las catergorias obtenidos en OnexPlex pero filtrando por los nos sincronizados
         $new_op_category_collection = $this->plexcategory->create()->getCollection();
@@ -692,48 +713,53 @@ class OnzePlexApi
             ->addFieldToFilter('is_synchronized', ['eq' => false])
             ->load();
         //verifico que haya categorias importados y procedo sino devuelvo mensaje
-        if (!empty($new_op_category_collection->getColumnValues('id'))) {
-            //seteo area de ejecuccion como global front y backend
-            //$this->state->setAreaCode(\Magento\Framework\App\Area::AREA_GLOBAL); lo paso al controlador
-            /** los convierto a Categorias Magento
-             *  recorro los nuevos rubros obtenidos y por cada uno los inserto
-             */
-            foreach ($new_op_category_collection as $new_op_category) {
-                $mag_category = $this->categoryFactory->create();
-                $mag_category->setName($new_op_category->getName())
-                    ->setIsActive(true);
-                if ($new_op_category->getIsPlexGroup()) {
-                    $mag_category->setLevel(4);
-                } elseif ($new_op_category->getIsChild()) {
-                    $parent_plex_category = $this->plexcategory->create();
-                    $parent_plex_category->load($new_op_category->getIdParent());
-                    $mag_category
-                        ->setParentId($parent_plex_category->getIdMagento())
-                        ->setLevel(3);
-                } else {
-                    $mag_category->setLevel(2);
-                }
-                $mag_category = $this->categoryRespository->save($mag_category);
-                $new_op_category->setIsSynchronized(true)
-                    ->setIdMagento($mag_category->getId());
-                $new_op_category->save();
-            }
-
-            return [
-                'state' => 'success',
-                'qty' => count($new_op_category_collection),
-                'message' => 'convertion success'
-            ];
+        if (!empty($new_op_category_collection->getColumnValues('id'))) {*/
+    //seteo area de ejecuccion como global front y backend
+    //$this->state->setAreaCode(\Magento\Framework\App\Area::AREA_GLOBAL); lo paso al controlador
+    /** los convierto a Categorias Magento
+     *  recorro los nuevos rubros obtenidos y por cada uno los inserto
+     */
+    /*foreach ($new_op_category_collection as $new_op_category) {
+        $mag_category = $this->categoryFactory->create();
+        $mag_category->setName($new_op_category->getName())
+            ->setIsActive(true);
+        if ($new_op_category->getIsPlexGroup()) {
+            $mag_category->setLevel(4);
+        } elseif ($new_op_category->getIsChild()) {
+            $parent_plex_category = $this->plexcategory->create();
+            $parent_plex_category->load($new_op_category->getIdParent());
+            $mag_category
+                ->setParentId($parent_plex_category->getIdMagento())
+                ->setLevel(3);
         } else {
-            return [
-                'state' => 'success',
-                'qty' => 0,
-                'message' => 'nothing for convert'
-            ];
+            $mag_category->setLevel(2);
         }
+        $mag_category = $this->categoryRespository->save($mag_category);
+        $new_op_category->setIsSynchronized(true)
+            ->setIdMagento($mag_category->getId());
+        $new_op_category->save();
     }
 
-    public function updateGrupofromPlex()
+    return [
+        'state' => 'success',
+        'qty' => count($new_op_category_collection),
+        'message' => 'convertion success'
+    ];
+        } else {
+    return [
+        'state' => 'success',
+        'qty' => 0,
+        'message' => 'nothing for convert'
+    ];
+        }
+    }*/
+
+    /**
+     * @return array
+     * @throws \Exception
+     * Depreco porque esta en update product
+     */
+    /*public function updateGrupofromPlex()
     {
         $op_products_collection = $this->plexproduct->create()->getCollection()->load();
         $update_from_plex = $this->getProductsOnexPlex(null, $op_products_collection->getColumnValues('codproduct'));
@@ -770,8 +796,12 @@ class OnzePlexApi
                 'message' => $update_from_plex['message']
             ];
         }
-    }
-    public function addCategoryToProduct()
+    }*/
+    /**
+     * @return string[]
+     * se depreca hasta implementar categorias de plex
+     */
+    /*public function addCategoryToProduct()
     {
         $count = 0;
         //Este método agrega o actualiza la categoria a un producto ya sincronizado (convertido).
@@ -799,7 +829,7 @@ class OnzePlexApi
                 'message' => "Products Plex with Group: " . count($op_products_collection) .
                     " Products with Categories added: " . $count
             ];
-    }
+    }*/
 
     /**
      * Area de Pedidos...
@@ -1264,7 +1294,11 @@ class OnzePlexApi
                                     ->setStatus(Product\Attribute\Source\Status::STATUS_ENABLED);
                         $plex_laboratorio = $this->plexlaboratorio->create()
                             ->load($op_product->getIdLaboratorio(), 'id_plex');
-                        $mag_product->setCustomAttribute('laboratorio', $plex_laboratorio->getName());
+                        $mag_product
+                            ->setCustomAttribute('laboratorio', $plex_laboratorio->getName())
+                            ->setCustomAttribute('rubro_plex', $op_product->getRubro())
+                            ->setCustomAttribute('subrubro_plex', $op_product->getSubrubro())
+                            ->setCustomAttribute('grupo_plex', $op_product->getGrupo());
                         $this->productRepository->save($mag_product);
                     }
                     // Verifico los productos que cambiaron el estado de publicados en Plex. Como?
@@ -1275,31 +1309,31 @@ class OnzePlexApi
                     );
                     if (count($products_to_disabled) > 0) {
                         foreach ($products_to_disabled as $product_to_disable) {
-                            $this->logger->info(" || Jotadevs Update Product || Deshabilitando producto: "
-                                . $product_to_disable);
-                            //cambio en Modelo Plex
+                            //cambio estado deshabilitado en Modelo Plex
                             $op_product_to_disabled = $this->plexproduct->create()
-                                ->load($product_to_disable, 'codproduct')
-                                ->setIsOpEnabled(false);
-                            $op_product_to_disabled
-                                ->setObservations($op_product_to_disabled->getObservations() .
-                                    " | Producto desactivado desde Plex el " . date('Y-m-d H:i:s'))
-                                ->save();
+                                ->load($product_to_disable, 'codproduct');
+                            if ($op_product_to_disabled->getIsOpEnabled()) {
+                                $op_product_to_disabled
+                                    ->setIsOpEnabled(false)
+                                    ->setObservations(" | Producto desactivado desde Plex el " . date('Y-m-d H:i:s'))
+                                    ->save();
 
-                            //actualizo en Magento el status
-                            /** @var ProductInterface $mag_product_to_disabled */
-                            $mag_product_to_disabled = $this->productRepository->get(
-                                $op_product_to_disabled->getSku(),
-                                true,
-                                0,
-                                true
-                            );
-                            $mag_product_to_disabled->setStatus(Product\Attribute\Source\Status::STATUS_DISABLED);
-                            $this->logger->info(" || Jotadevs Update Product || Deshabilitando en Magento producto: "
-                                . $mag_product_to_disabled->getId() . " - >>" . $mag_product_to_disabled->getStatus());
-                            $this->productRepository->save($mag_product_to_disabled);
+                                //actualizo en Magento el status
+                                /** @var ProductInterface $mag_product_to_disabled */
+                                $mag_product_to_disabled = $this->productRepository->get(
+                                    $op_product_to_disabled->getSku(),
+                                    true,
+                                    0,
+                                    true
+                                );
+                                $mag_product_to_disabled->setStatus(Product\Attribute\Source\Status::STATUS_DISABLED);
+                                $this->logger
+                                    ->info(" || Jotadevs Update Product || Deshabilitando en Magento producto: "
+                                    . $mag_product_to_disabled->getId() . " - >>"
+                                    . $mag_product_to_disabled->getStatus());
+                                $this->productRepository->save($mag_product_to_disabled);
+                            }
                         }
-
                     }
 
                     $message = " Products Sended: " . count($products_to_update->getColumnValues('codproduct')) .
@@ -1312,7 +1346,7 @@ class OnzePlexApi
                                    )
                                );
                     $this->logger->info(" || Jotadevs Update Product || " . $message);
-                    $messages [] = [
+                    $messages [$i] = [
                         'page ' . $i => [
                             'state' => 'success',
                             'received' => count($result['result']),
@@ -1323,7 +1357,7 @@ class OnzePlexApi
                 } else {
                     $message = "Product Received: 0  Products Updated: 0";
                     $this->logger->info(" || Jotadevs Update Product || " . $message);
-                    $messages[] = [
+                    $messages[$i] = [
                         'page ' . $i => [
                             'state' => 'success',
                             'received' => 0,
@@ -1334,7 +1368,7 @@ class OnzePlexApi
                 }
             } else {
                 $this->logger->info(" || Jotadevs Update Product || " . $result['message']);
-                $messages[] = [
+                $messages[$i] = [
                     'page ' . $i => [
                         'state' => 'error',
                         'message' => $result['message']
@@ -1344,6 +1378,4 @@ class OnzePlexApi
         }
         return $messages;
     }
-
-
 }

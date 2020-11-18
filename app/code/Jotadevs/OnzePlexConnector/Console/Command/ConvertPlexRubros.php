@@ -35,9 +35,10 @@ class ConvertPlexRubros extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): void
     {
-        $response = $this->onzeplexapi->convertToMagentoCategory();
+        $output->writeln('Metodo deprecado hasta implementar Categorias Plex');
+        /*$response = $this->onzeplexapi->convertToMagentoCategory();
         $output->writeln('Estado de Operación: ' . $response['state']);
         $output->writeln('Catidad convertida: ' . $response['qty']);
-        $output->writeln($response['message']);
+        $output->writeln($response['message']);*/
     }
 }

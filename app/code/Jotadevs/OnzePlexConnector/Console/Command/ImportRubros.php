@@ -35,7 +35,8 @@ class ImportRubros extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): void
     {
-        $rubros = $this->onzeplexapi->importRubrosFromPlex();
+        $output->writeln("Comando deprecado hasta implementar categorias plex");
+        /*$rubros = $this->onzeplexapi->importRubrosFromPlex();
         $subrubros = $this->onzeplexapi->importSubRubrosFromPlex();
         $grupos = $this->onzeplexapi->importGruposFromPlex();
         $output->writeln("Importacion de Rubros:");
@@ -51,7 +52,7 @@ class ImportRubros extends Command
         $output->writeln("Importacion de Grupos:");
         $output->writeln("------->Estado: " . $grupos['state']);
         $output->writeln("------->Recibidos: " . $grupos['received']);
-        $output->writeln("------->Nuevos:" . $grupos['new']);
+        $output->writeln("------->Nuevos:" . $grupos['new']);*/
 
     }
 }

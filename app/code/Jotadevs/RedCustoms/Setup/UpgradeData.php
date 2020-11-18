@@ -1,9 +1,12 @@
 <?php
+
 namespace Jotadevs\RedCustoms\Setup;
 
+use Magento\Catalog\Model\Product;
 use Magento\Customer\Model\Customer;
 use Magento\Customer\Model\ResourceModel\Attribute;
 use Magento\Eav\Model\Config;
+use Magento\Eav\Setup\EavSetup;
 use Magento\Eav\Setup\EavSetupFactory;
 use Magento\Framework\Setup\ModuleContextInterface;
 use Magento\Framework\Setup\ModuleDataSetupInterface;
@@ -13,7 +16,7 @@ use Magento\Sales\Model\Order\Status;
 class UpgradeData implements UpgradeDataInterface
 {
     /**
-     * @var EavSetupFactory
+     * @var EavSetup
      */
     private $eavSetupFactory;
 
@@ -51,10 +54,13 @@ class UpgradeData implements UpgradeDataInterface
             $this->upgradeSchema201($setup);
         }
         if (version_compare($context->getVersion(), '1.0.3') < 0) {
-            $this->upgradeOrderStatus103($setup);
+            $this->upgradeOrderStatus103();
         }
         if (version_compare($context->getVersion(), '1.0.4') < 0) {
-            $this->upgradeOrderStatus104($setup);
+            $this->upgradeOrderStatus104();
+        }
+        if (version_compare($context->getVersion(), '1.0.5') < 0) {
+            $this->upgradeProductSchema202($setup);
         }
         $setup->endSetup();
     }
@@ -115,5 +121,91 @@ class UpgradeData implements UpgradeDataInterface
         $orderStatus->save();
     }
 
+    private function upgradeProductSchema202(ModuleDataSetupInterface $setup)
+    {
+        $eavSetup = $this->eavSetupFactory->create(['setup' => $setup]);
 
+        $attributeSetId = $eavSetup->getDefaultAttributeSetId(Product::ENTITY);
+        $attributeGroupId = $eavSetup->getDefaultAttributeGroupId(Product::ENTITY);
+
+        $eavSetup->addAttribute(Product::ENTITY, 'rubro_plex', [
+            'type' => 'text',
+            'label' => 'Rubro Plex',
+            'input' => 'text',
+            'global' => \Magento\Eav\Model\Entity\Attribute\ScopedAttributeInterface::SCOPE_GLOBAL,
+            'required' => false,
+            'is_filterable_in_grid' => true,
+            'is_used_in_grid' => true,
+            'is_visible_in_grid' => true,
+            'searchable' => true,
+            'system' => true,
+            'use_for_promo_rules' => true,
+            'visible_in_advanced_search' => true,
+            'visible' => true
+        ]);
+        $attribute = $this->eavConfig->getAttribute(Customer::ENTITY, 'subrubro_plex');
+        $attribute->setData('attribute_set_id', $attributeSetId);
+        $attribute->setData('attribute_group_id', $attributeGroupId);
+        $this->attributeResource->save($attribute);
+
+        $eavSetup->addAttribute(Product::ENTITY, 'subrubro_plex', [
+            'type' => 'text',
+            'label' => 'Sub-Rubro Plex',
+            'input' => 'text',
+            'global' => \Magento\Eav\Model\Entity\Attribute\ScopedAttributeInterface::SCOPE_GLOBAL,
+            'required' => false,
+            'is_filterable_in_grid' => true,
+            'is_used_in_grid' => true,
+            'is_visible_in_grid' => true,
+            'searchable' => true,
+            'system' => true,
+            'use_for_promo_rules' => true,
+            'visible_in_advanced_search' => true,
+            'visible' => true
+        ]);
+        $attribute = $this->eavConfig->getAttribute(Customer::ENTITY, 'subrubro_plex');
+        $attribute->setData('attribute_set_id', $attributeSetId);
+        $attribute->setData('attribute_group_id', $attributeGroupId);
+        $this->attributeResource->save($attribute);
+
+        $eavSetup->addAttribute(Product::ENTITY, 'grupo_plex', [
+            'type' => 'text',
+            'label' => 'Grupo Plex',
+            'input' => 'text',
+            'global' => \Magento\Eav\Model\Entity\Attribute\ScopedAttributeInterface::SCOPE_GLOBAL,
+            'required' => false,
+            'is_filterable_in_grid' => true,
+            'is_used_in_grid' => true,
+            'is_visible_in_grid' => true,
+            'searchable' => true,
+            'system' => true,
+            'use_for_promo_rules' => true,
+            'visible_in_advanced_search' => true,
+            'visible' => true
+        ]);
+        $attribute = $this->eavConfig->getAttribute(Customer::ENTITY, 'grupo_plex');
+        $attribute->setData('attribute_set_id', $attributeSetId);
+        $attribute->setData('attribute_group_id', $attributeGroupId);
+        $this->attributeResource->save($attribute);
+
+        $eavSetup->addAttribute(Product::ENTITY, 'observaciones_plex', [
+            'type' => 'text',
+            'label' => 'Observaciones',
+            'input' => 'textarea',
+            'global' => \Magento\Eav\Model\Entity\Attribute\ScopedAttributeInterface::SCOPE_GLOBAL,
+            'required' => false,
+            'is_filterable_in_grid' => true,
+            'is_used_in_grid' => true,
+            'is_visible_in_grid' => true,
+            'searchable' => true,
+            'system' => true,
+            'use_for_promo_rules' => true,
+            'visible_in_advanced_search' => true,
+            'visible' => true
+        ]);
+        $attribute = $this->eavConfig->getAttribute(Customer::ENTITY, 'observaciones');
+        $attribute->setData('attribute_set_id', $attributeSetId);
+        $attribute->setData('attribute_group_id', $attributeGroupId);
+        $this->attributeResource->save($attribute);
+    }
 }
