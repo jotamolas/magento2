@@ -41,7 +41,7 @@ class ImportProducts extends Command
             $output->writeln('Productos Recibidos: ' . $response['received']);
             $output->writeln('Nuevos: ' . $response['new']);
         } else {
-            $output->writeln('Nuevos: ' . $response['message']);
+            $output->writeln('Error: ' . $response['message']);
         }
         // var_dump($response);
     }

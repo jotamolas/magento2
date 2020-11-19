@@ -296,11 +296,15 @@ class OnzePlexApi
         //veo ultima fecha de producto creado para tomar desde esa fehcha productos nuevos
         $op_last_product = $this->plexproduct->create()->getCollection()->getLastItem();
         //llamamos a la RestApi del Erp y traemos TODOS los productos.
-        if ($op_last_product->isEmpty()) {
+        $op_last_product->getCreateAt() ?
+            $result = $this->getProductsOnexPlex(
+                \DateTime::createFromFormat(
+                    'Y-m-d H:i:s',
+                    $op_last_product->getCreateAt()
+                )
+            ) :
             $result = $this->getProductsOnexPlex();
-        } else {
-            $result = $this->getProductsOnexPlex(\DateTime::createFromFormat('Y-m-d H:i:s', $op_last_product->getCreateAt()));
-        }
+
         //si hay resultados proseguimos
         if ($result['state'] == 'success') {
             if (!empty($result['result'])) {
@@ -308,8 +312,14 @@ class OnzePlexApi
                 //recorro el array de productos para analizar si ya lo tengo en base
                 foreach ($result['result'] as $op_api_product) {
                     //verifico si no existe ya en la tabla de op por id y por nombre por que Plex maneja productos duplicados
-                    $op_product_by_id = $this->plexproduct->create()->load($op_api_product['codproducto'], 'codproduct');
-                    $op_product_by_name = $this->plexproduct->create()->load($op_api_product['producto'], 'producto');
+                    $op_product_by_id = $this->plexproduct->create()->load(
+                        $op_api_product['codproducto'],
+                        'codproduct'
+                    );
+                    $op_product_by_name = $this->plexproduct->create()->load(
+                        $op_api_product['producto'],
+                        'producto'
+                    );
                     if ($op_product_by_id->isEmpty()) {
                         if ($op_product_by_name->isEmpty()) {
                             $op_product = $this->plexproduct->create();
@@ -341,10 +351,15 @@ class OnzePlexApi
                             $op_product->save();
                             $op_products[] = $op_product;
                         } else {
-                            $this->logger->error("Productos Duplicados ?? - " . $op_api_product['codproducto'] . " - " . $op_api_product['producto']);
+                            $this->logger
+                                ->error("Productos Duplicados ?? - " .
+                                    $op_api_product['codproducto'] . " - " .
+                                    $op_api_product['producto']);
                         }
                     } else {
-                        $this->logger->error("Productos Ya Guardados ?? - " . $op_api_product['codproducto'] . " - " . $op_api_product['producto']);
+                        $this->logger->error("Productos Ya Guardados ?? - " .
+                            $op_api_product['codproducto'] . " - " .
+                            $op_api_product['producto']);
                     }
                 }
 
