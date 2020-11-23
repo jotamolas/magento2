@@ -1194,6 +1194,12 @@ class OnzePlexApi
             ];
         }
     }
+
+    /**
+     * @param array $plex_stock_rs
+     * @return array|bool
+     * @throws \Exception
+     */
     public function processStockFromPlex(array $plex_stock_rs)
     {
         if ($plex_stock_rs['state'] == 'success') {
@@ -1222,6 +1228,12 @@ class OnzePlexApi
             return false;
         }
     }
+
+    /**
+     * @param $productos
+     * @return array
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
     public function updateStockItem($productos)
     {
         foreach ($productos as $producto) {
@@ -1229,15 +1241,13 @@ class OnzePlexApi
             /** @var ProductInterface $mag_product */
             $mag_product = $this->productFactory->create()->load($op_product->getIdMagento());
             $stockItem = $this->stockRegistry->getStockItemBySku($mag_product->getSku());
-            //var_dump($op_product->getStock());
+
             if ($op_product->getStock() > 0) {
                 $stockItem->setIsInStock(true)->setQty($op_product->getStock());
             } else {
                 $stockItem->setIsInStock(false)->setQty(0);
             }
             $stockItem->save();
-            //var_dump($mag_product->getCustomAttribute('laboratorio'));
-            //var_dump($mag_product->getId());
         }
         return [
             'state' => 'success',

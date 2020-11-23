@@ -22,6 +22,9 @@
                 <item name="jotadevs_onzeplexconnector_import_laboratorios" xsi:type="object">
                     Jotadevs\OnzePlexConnector\Console\Command\ImportLaboratorios
                 </item>
+                <item name="jotadevs_onzeplexconnector_stock_update" xsi:type="object">
+                    Jotadevs\OnzePlexConnector\Console\Command\updateStock
+                </item>
             </argument>
         </arguments>
     </type>
