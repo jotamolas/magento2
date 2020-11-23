@@ -1209,7 +1209,7 @@ class OnzePlexApi
             foreach ($rs as $producto) {
                 $prod = [];
                 $producto_plex = $this->plexproduct->create()->load($producto['codproducto'], 'codproduct');
-                var_dump($producto_plex->getId());
+                //var_dump($producto_plex->getId());
                 foreach ($producto as $key => $value) {
                     if ($key == 'stock') {
                         foreach ($value as $stock) {
