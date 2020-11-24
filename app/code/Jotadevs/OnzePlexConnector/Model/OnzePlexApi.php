@@ -1209,7 +1209,7 @@ class OnzePlexApi
             foreach ($rs as $producto) {
                 $prod = [];
                 $producto_plex = $this->plexproduct->create()->load($producto['codproducto'], 'codproduct');
-                //var_dump($producto_plex->getId());
+                $prod['id_magento'] = $producto_plex->getIdMagento();
                 foreach ($producto as $key => $value) {
                     if ($key == 'stock') {
                         foreach ($value as $stock) {
@@ -1237,13 +1237,13 @@ class OnzePlexApi
     public function updateStockItem($productos)
     {
         foreach ($productos as $producto) {
-            $op_product = $this->plexproduct->create()->load($producto['codproducto'], 'codproduct');
+           // $op_product = $this->plexproduct->create()->load($producto['codproducto'], 'codproduct');
             /** @var ProductInterface $mag_product */
-            $mag_product = $this->productFactory->create()->load($op_product->getIdMagento());
-            $stockItem = $this->stockRegistry->getStockItemBySku($mag_product->getSku());
-
-            if ($op_product->getStock() > 0) {
-                $stockItem->setIsInStock(true)->setQty($op_product->getStock());
+            //$mag_product = $this->productFactory->create()->load($op_product->getIdMagento());
+            //$stockItem = $this->stockRegistry->getStockItemBySku($mag_product->getSku());
+            $stockItem = $this->stockRegistry->getStockItemBySku($producto['codproducto']);
+            if ($producto['cantidad'] > 0) {
+                $stockItem->setIsInStock(true)->setQty($producto['cantidad']);
             } else {
                 $stockItem->setIsInStock(false)->setQty(0);
             }

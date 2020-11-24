@@ -78,6 +78,14 @@ class updateStock extends Command
             $total_time_pr_op_mag = date_diff($init_time_pr_op_mag, $end_time_pr_op_mag);
             var_dump("Tiempo utilizado para procesar los productos en Magento Modelo Plex --> " .
                 $total_time_pr_op_mag->format("%i:%s"));
+
+            $init_time_pr_prod_mag =  $this->timezone->date();
+            $updatedProducts = $this->externalApi->updateStockItem($processedProducts);
+            $end_time_pr_prod_mag =  $this->timezone->date();
+            $total_time_pr_prod_mag  = date_diff($init_time_pr_prod_mag, $end_time_pr_prod_mag);
+            var_dump("Tiempo utilizado para procesar los productos en Magento Modelo Magento --> " .
+                $total_time_pr_prod_mag->format("%i:%s"));
+
         }
     }
 }
