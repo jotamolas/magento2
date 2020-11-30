@@ -49,11 +49,12 @@ class updateStock extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): void
     {
+        $total_time = $this->timezone->date();
         $this->state->setAreaCode(\Magento\Framework\App\Area::AREA_GLOBAL);
         $op_products = $this->plexproduct->create()->getCollection()
             ->addFieldToFilter('is_synchronized', ['eq' => true])
             ->addFieldToFilter('is_op_enabled', ['eq' => true])
-            ->addFieldToFilter('stock', ['gt' => 0])
+            //->addFieldToFilter('stock', ['gt' => 0])
             ->setPageSize(400);
         var_dump("Cantidad de productos a consultar stock (Stock > 0) " . count($op_products->getAllIds()));
         $pages = $op_products->getLastPageNumber();
@@ -63,7 +64,7 @@ class updateStock extends Command
             $op_products = $this->plexproduct->create()->getCollection()
                 ->addFieldToFilter('is_synchronized', ['eq' => true])
                 ->addFieldToFilter('is_op_enabled', ['eq' => true])
-                ->addFieldToFilter('stock', ['gt' => 0])
+                //->addFieldToFilter('stock', ['gt' => 0])
                 ->setPageSize(400);
             $op_products->setCurPage($i);
             $init_time_plex_call =  $this->timezone->date();
@@ -91,5 +92,6 @@ class updateStock extends Command
             var_dump("Cantidad de productos: " . $updatedProducts['qty_product_stock_update']);
 
         }
+        var_dump("Tiempo total de ejecución : " . date_diff($total_time, $this->timezone->date())->format("%i:%s"));
     }
 }
