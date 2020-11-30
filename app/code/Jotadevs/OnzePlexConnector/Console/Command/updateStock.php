@@ -55,7 +55,9 @@ class updateStock extends Command
             ->addFieldToFilter('is_op_enabled', ['eq' => true])
             ->addFieldToFilter('stock', ['gt' => 0])
             ->setPageSize(400);
+        var_dump("Cantidad de productos a consultar stock (Stock > 0) " . count($op_products->getAllIds()));
         $pages = $op_products->getLastPageNumber();
+        var_dump("Cantidad de paginas a procesar " . $pages);
         for ($i = 1; $i <= $pages; $i++) {
             var_dump("updateStock, vuelta numero N" . $i);
             $op_products = $this->plexproduct->create()->getCollection()
