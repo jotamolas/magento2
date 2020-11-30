@@ -14,6 +14,8 @@ use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Framework\HTTP\ZendClient;
 use Magento\Framework\Serialize\Serializer\Json;
+use Magento\InventoryApi\Api\Data\SourceItemInterfaceFactory;
+use Magento\InventoryApi\Api\SourceItemsSaveInterface;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory;
 use Psr\Log\LoggerInterface;
@@ -31,6 +33,7 @@ class OnzePlexApi
     protected $plexoperation;
     protected $plexlaboratorio;
     protected $plex_mercadopago = 10;
+
     /** @var $plexorder PlexOrder */
     protected $plexorder;
     protected $logger;
@@ -39,8 +42,18 @@ class OnzePlexApi
     private $productRepository;
     private $stockRegistry;
 
+    /**
+     * @var SourceItemsSaveInterface
+     */
+    protected $sourceItemsSave;
+
+    /**
+     * @var SourceItemInterfaceFactory
+     */
+    protected $sourceItemFactory;
     private $categoryFactory;
     private $categoryRespository;
+
     /* @var $_orderCollectionFactory \Magento\Sales\Model\ResourceModel\Order\CollectionFactory */
     private $orderCollectionFactory;
 
@@ -73,6 +86,8 @@ class OnzePlexApi
         CollectionFactory $orderCollectionFactory,
         OrderRepositoryInterface $orderRepository,
         CustomerRepositoryInterface $customerRepository,
+        SourceItemsSaveInterface $sourceItemsSave,
+        SourceItemInterfaceFactory $sourceItemFactory,
         LoggerInterface $logger
     ) {
         $this->zendClient = $zendClient;
@@ -93,6 +108,8 @@ class OnzePlexApi
         $this->_customerRepository = $customerRepository;
         $this->_orderRepository = $orderRepository;
         $this->logger = $logger;
+        $this->sourceItemFactory = $sourceItemFactory;
+        $this->sourceItemsSave = $sourceItemsSave;
     }
 
     public function getProductsOnexPlex(\DateTime $fechadecambio = null, array $ids = null)
@@ -1236,22 +1253,31 @@ class OnzePlexApi
      */
     public function updateStockItem($productos)
     {
+        $sourceItems = [];
         foreach ($productos as $producto) {
-           // $op_product = $this->plexproduct->create()->load($producto['codproducto'], 'codproduct');
-            /** @var ProductInterface $mag_product */
+            $sourceItem = $this->sourceItemFactory->create();
+            $sourceItem->setSourceCode('default');
+            // $op_product = $this->plexproduct->create()->load($producto['codproducto'], 'codproduct');
             //$mag_product = $this->productFactory->create()->load($op_product->getIdMagento());
             //$stockItem = $this->stockRegistry->getStockItemBySku($mag_product->getSku());
-            $stockItem = $this->stockRegistry->getStockItemBySku($producto['codproducto']);
+            //$stockItem = $this->stockRegistry->getStockItemBySku($producto['codproducto']);
+            $sourceItem->setSku($producto['codproducto']);
             if ($producto['cantidad'] > 0) {
-                $stockItem->setIsInStock(true)->setQty($producto['cantidad']);
+                //$stockItem->setIsInStock(true)->setQty($producto['cantidad']);
+                $sourceItem->setQuantity($producto['cantidad']);
+                $sourceItem->setStatus(1);
             } else {
-                $stockItem->setIsInStock(false)->setQty(0);
+                //$stockItem->setIsInStock(false)->setQty(0);
+                $sourceItem->setQuantity(0);
+                $sourceItem->setStatus(0);
             }
-            $stockItem->save();
+            $sourceItems[] = $sourceItem;
+            //$stockItem->save();
         }
+        $this->sourceItemsSave->execute($sourceItems);
         return [
             'state' => 'success',
-            'qty_product_stock_update' => count($productos)
+            'qty_product_stock_update' => count($sourceItems)
         ];
     }
 
