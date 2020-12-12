@@ -51,46 +51,53 @@ class updateStock extends Command
     {
         $total_time = $this->timezone->date();
         $this->state->setAreaCode(\Magento\Framework\App\Area::AREA_GLOBAL);
-        $op_products = $this->plexproduct->create()->getCollection()
-            ->addFieldToFilter('is_synchronized', ['eq' => true])
-            ->addFieldToFilter('is_op_enabled', ['eq' => true])
-            //->addFieldToFilter('stock', ['gt' => 0])
-            ->setPageSize(400);
-        var_dump("Cantidad de productos a consultar stock (Stock > 0) " . count($op_products->getAllIds()));
-        $pages = $op_products->getLastPageNumber();
-        var_dump("Cantidad de paginas a procesar " . $pages);
-        for ($i = 1; $i <= $pages; $i++) {
-            var_dump("updateStock, vuelta numero N" . $i);
+        $ws_plex_status = $this->externalApi->getStockFromPlex([1101]); //Envio un prd dummy para testear ws
+        if ($ws_plex_status['state'] == 'success') {
             $op_products = $this->plexproduct->create()->getCollection()
                 ->addFieldToFilter('is_synchronized', ['eq' => true])
                 ->addFieldToFilter('is_op_enabled', ['eq' => true])
                 //->addFieldToFilter('stock', ['gt' => 0])
                 ->setPageSize(400);
-            $op_products->setCurPage($i);
-            $init_time_plex_call =  $this->timezone->date();
-            $stockFromPlex = $this->externalApi->getStockFromPlex($op_products->getColumnValues('codproduct'));
-            $end_time_plex_call = $this->timezone->date();
+            var_dump("Cantidad de productos a consultar stock (Stock > 0) " . count($op_products->getAllIds()));
+            $pages = $op_products->getLastPageNumber();
+            var_dump("Cantidad de paginas a procesar " . $pages);
+            for ($i = 1; $i <= $pages; $i++) {
+                var_dump("updateStock, vuelta numero N" . $i);
+                $op_products = $this->plexproduct->create()->getCollection()
+                    ->addFieldToFilter('is_synchronized', ['eq' => true])
+                    ->addFieldToFilter('is_op_enabled', ['eq' => true])
+                    //->addFieldToFilter('stock', ['gt' => 0])
+                    ->setPageSize(400);
+                $op_products->setCurPage($i);
+                $init_time_plex_call =  $this->timezone->date();
+                $stockFromPlex = $this->externalApi->getStockFromPlex($op_products->getColumnValues('codproduct'));
+                $end_time_plex_call = $this->timezone->date();
+                $total_time_plex_call = date_diff($init_time_plex_call, $end_time_plex_call);
+                var_dump("Tiempo utilizado para llamada a Plex --> " .
+                    $total_time_plex_call->format("%i:%s"));
+                if ($stockFromPlex['state'] == 'success') {
+                    $init_time_pr_op_mag =  $this->timezone->date();
+                    $processedProducts = $this->externalApi->processStockFromPlex($stockFromPlex);
+                    $end_time_pr_op_mag =  $this->timezone->date();
+                    $total_time_pr_op_mag = date_diff($init_time_pr_op_mag, $end_time_pr_op_mag);
+                    var_dump("Tiempo utilizado para procesar los productos en Magento Modelo Plex --> " .
+                        $total_time_pr_op_mag->format("%i:%s"));
 
-            $total_time_plex_call = date_diff($init_time_plex_call, $end_time_plex_call);
-            var_dump("Tiempo utilizado para llamada a Plex --> " .
-                $total_time_plex_call->format("%i:%s"));
-
-            $init_time_pr_op_mag =  $this->timezone->date();
-            $processedProducts = $this->externalApi->processStockFromPlex($stockFromPlex);
-            $end_time_pr_op_mag =  $this->timezone->date();
-            $total_time_pr_op_mag = date_diff($init_time_pr_op_mag, $end_time_pr_op_mag);
-            var_dump("Tiempo utilizado para procesar los productos en Magento Modelo Plex --> " .
-                $total_time_pr_op_mag->format("%i:%s"));
-
-
-            $init_time_pr_prod_mag =  $this->timezone->date();
-            $updatedProducts = $this->externalApi->updateStockItem($processedProducts);
-            $end_time_pr_prod_mag =  $this->timezone->date();
-            $total_time_pr_prod_mag  = date_diff($init_time_pr_prod_mag, $end_time_pr_prod_mag);
-            var_dump("Tiempo utilizado para procesar los productos en Magento Modelo Magento --> " .
-                $total_time_pr_prod_mag->format("%i:%s"));
-            var_dump("Cantidad de productos: " . $updatedProducts['qty_product_stock_update']);
-
+                    $init_time_pr_prod_mag =  $this->timezone->date();
+                    $updatedProducts = $this->externalApi->updateStockItem($processedProducts);
+                    $end_time_pr_prod_mag =  $this->timezone->date();
+                    $total_time_pr_prod_mag  = date_diff($init_time_pr_prod_mag, $end_time_pr_prod_mag);
+                    var_dump("Tiempo utilizado para procesar los productos en Magento Modelo Magento --> " .
+                        $total_time_pr_prod_mag->format("%i:%s"));
+                    var_dump("Cantidad de productos: " . $updatedProducts['qty_product_stock_update']);
+                } else {
+                    var_dump(" Error Llamando a Plex en pagina Nro.: "
+                        . $i . " Mensaje de error: " . $stockFromPlex['message']);
+                }
+            }
+        } else {
+            var_dump(" No se pudo conectar con el WS de Plex. Error: " .
+                $ws_plex_status['message'] . " Mensaje: " . $ws_plex_status['message']);
         }
         var_dump("Tiempo total de ejecución : " . date_diff($total_time, $this->timezone->date())->format("%i:%s"));
     }

@@ -61,7 +61,8 @@ class TestExternalApi extends Command
         //$products_plex_stock = $this->externalApi->getStockFromPlex([1007900505]);
         //$products_plex_updated = $this->externalApi->processStockFromPlex($products_plex_stock);
         //$response = $this->externalApi->updateStockItem($products_plex_updated);
-        $response = $this->externalApi->updateProductsFromPlex();
+        $response = $this->externalApi->updateProductsOrchestor();
+       // $response = $this->externalApi->evaluatePriceVariation('403.11','383.92');
         var_dump($response);
     }
 }

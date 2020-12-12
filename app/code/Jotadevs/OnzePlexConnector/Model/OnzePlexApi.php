@@ -9,11 +9,16 @@ use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Api\Data\ProductInterfaceFactory;
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Model\Product;
+use Magento\Catalog\Model\ResourceModel\Product as ProductResource;
 use Magento\CatalogInventory\Api\StockRegistryInterface;
 use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Framework\Exception\CouldNotSaveException;
+use Magento\Framework\Exception\InputException;
+use Magento\Framework\Exception\StateException;
 use Magento\Framework\HTTP\ZendClient;
 use Magento\Framework\Serialize\Serializer\Json;
+use Magento\Framework\Stdlib\DateTime\TimezoneInterface;
+use Magento\Framework\Validation\ValidationException;
 use Magento\InventoryApi\Api\Data\SourceItemInterfaceFactory;
 use Magento\InventoryApi\Api\SourceItemsSaveInterface;
 use Magento\Sales\Api\OrderRepositoryInterface;
@@ -40,6 +45,7 @@ class OnzePlexApi
 
     private $productFactory;
     private $productRepository;
+    private $productResource;
     private $stockRegistry;
 
     /**
@@ -67,6 +73,7 @@ class OnzePlexApi
     private $uriProd = 'http://gralpaz.plexonzecenter.com.ar:8081/onzews/';
 
     protected $categoryLinkManagement;
+    private $timezone;
 
     public function __construct(
         PlexOperationFactory $plexoperation,
@@ -78,6 +85,7 @@ class OnzePlexApi
         Json $json,
         ProductInterfaceFactory $productFactory,
         ProductRepositoryInterface $productRepository,
+        ProductResource $productResource,
         CategoryInterfaceFactory $categoryFactory,
         CategoryRepositoryInterface $categoryRepository,
         StockRegistryInterface $stockRegistry,
@@ -88,7 +96,8 @@ class OnzePlexApi
         CustomerRepositoryInterface $customerRepository,
         SourceItemsSaveInterface $sourceItemsSave,
         SourceItemInterfaceFactory $sourceItemFactory,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        TimezoneInterface $timezone
     ) {
         $this->zendClient = $zendClient;
         $this->json = $json;
@@ -99,6 +108,7 @@ class OnzePlexApi
         $this->plexlaboratorio = $plexlaboratorio;
         $this->productFactory = $productFactory;
         $this->productRepository = $productRepository;
+        $this->productResource = $productResource;
         $this->categoryFactory = $categoryFactory;
         $this->categoryRespository = $categoryRepository;
         $this->stockRegistry = $stockRegistry;
@@ -110,12 +120,16 @@ class OnzePlexApi
         $this->logger = $logger;
         $this->sourceItemFactory = $sourceItemFactory;
         $this->sourceItemsSave = $sourceItemsSave;
+        $this->timezone = $timezone;
     }
 
     public function getProductsOnexPlex(\DateTime $fechadecambio = null, array $ids = null)
     {
         $parameters = [];
-        $fechadecambio ? $parameters = array_merge($parameters, ['fechacambio' => $fechadecambio->format('Ymd')]) : null;
+        $fechadecambio ?
+            $parameters = array_merge($parameters, ['fechacambio' => $fechadecambio->format('Ymd')])
+            :
+            null;
         $ids ? $parameters = array_merge($parameters, ['idproducto' => implode(',', $ids)]) : null;
         //var_dump($parameters);
         $this->zendClient->resetParameters();
@@ -1257,24 +1271,22 @@ class OnzePlexApi
         foreach ($productos as $producto) {
             $sourceItem = $this->sourceItemFactory->create();
             $sourceItem->setSourceCode('default');
-            // $op_product = $this->plexproduct->create()->load($producto['codproducto'], 'codproduct');
-            //$mag_product = $this->productFactory->create()->load($op_product->getIdMagento());
-            //$stockItem = $this->stockRegistry->getStockItemBySku($mag_product->getSku());
-            //$stockItem = $this->stockRegistry->getStockItemBySku($producto['codproducto']);
             $sourceItem->setSku($producto['codproducto']);
             if ($producto['cantidad'] > 0) {
-                //$stockItem->setIsInStock(true)->setQty($producto['cantidad']);
                 $sourceItem->setQuantity($producto['cantidad']);
                 $sourceItem->setStatus(1);
             } else {
-                //$stockItem->setIsInStock(false)->setQty(0);
                 $sourceItem->setQuantity(0);
                 $sourceItem->setStatus(0);
             }
             $sourceItems[] = $sourceItem;
-            //$stockItem->save();
         }
-        $this->sourceItemsSave->execute($sourceItems);
+        try {
+            $this->sourceItemsSave->execute($sourceItems);
+        } catch (CouldNotSaveException $e) {
+        } catch (InputException $e) {
+        } catch (ValidationException $e) {
+        }
         return [
             'state' => 'success',
             'qty_product_stock_update' => count($sourceItems)
@@ -1284,13 +1296,8 @@ class OnzePlexApi
     /**
      * Update Info of products
      */
-    public function updateProductsFromPlex()
+    /*public function updateProductsFromPlex()
     {
-        //busco los productos en base intermedia.
-        $products_to_update = $this->plexproduct->create()->getCollection()
-            ->addFieldToFilter('is_synchronized', ['eq' => true])
-            ->setPageSize(400);
-        $pages = $products_to_update->getLastPageNumber();
         $messages = [];
         for ($i = 1; $i <= $pages; $i++) {
             $products_to_update = $this->plexproduct->create()->getCollection()
@@ -1311,78 +1318,43 @@ class OnzePlexApi
             if ($result['state'] == 'success') {
                 //Verifico que vuelvan resultados
                 if (!empty($result['result'])) {
-                    $op_products = [];
-                    $op_products_codes = [];
-                    //recorro el array de productos para actualizar los datos
-                    foreach ($result['result'] as $op_api_product) {
-                        $op_product = $this->plexproduct->create()->load($op_api_product['codproducto'], 'codproduct');
-
-                        foreach ($op_api_product as $key => $value) {
-                            ($key == 'codproducto') ? array_push($op_products_codes, $value) : false; //pongo en codigo
-                            ($key == 'precio') ? $op_product->setPrecio($value) : null;
-                            ($key == 'rubro') ? $op_product->setRubro($value) : null;
-                            ($key == 'subrubro') ? $op_product->setSubrubro($value) : null;
-                            ($key == 'idrubro') ? $op_product->setIdrubro($value) : null;
-                            ($key == 'idSubro') ? $op_product->setIdrubro($value) : null;
-                            ($key == 'idlaboratorio') ? $op_product->setIdLaboratorio($value) : null;
-                            if ($key == 'grupos') {
-                                foreach ($value as $gr) {
-                                    foreach ($gr as $key_gr => $value_gr) {
-                                        ($key_gr == 'idgrupo') ? $op_product->setIdgrupo($value_gr) : null;
-                                        ($key_gr == 'grupo') ? $op_product->setGrupo($value_gr) : null;
-                                    }
-                                }
-                            }
-                        }
-                        $op_product->setIsOpEnabled(true);
-                        $op_product->save();
-                        $op_products[] = $op_product;
-
+                    ///aaacaaa
                         //Actualización en el Producto Magento
                         /** @var ProductInterface $mag_product */
-                        $mag_product = $this->productFactory->create()->load($op_product->getIdMagento());
-                        $mag_product->setPrice($op_product->getPrecio())
-                                    ->setStatus(Product\Attribute\Source\Status::STATUS_ENABLED);
-                        $plex_laboratorio = $this->plexlaboratorio->create()
-                            ->load($op_product->getIdLaboratorio(), 'id_plex');
-                        $mag_product
-                            ->setCustomAttribute('laboratorio', $plex_laboratorio->getName())
-                            ->setCustomAttribute('rubro_plex', $op_product->getRubro())
-                            ->setCustomAttribute('subrubro_plex', $op_product->getSubrubro())
-                            ->setCustomAttribute('grupo_plex', $op_product->getGrupo());
-                        $this->productRepository->save($mag_product);
+    /*
+
                     }
                     // Verifico los productos que cambiaron el estado de publicados en Plex. Como?
                     // Comparando los que envíe y los qye recibí
                     $products_to_disabled = array_diff(
-                        $products_to_update->getColumnValues('codproduct'),
-                        $op_products_codes
+      $products_to_update->getColumnValues('codproduct'),
+      $op_products_codes
                     );
                     if (count($products_to_disabled) > 0) {
-                        foreach ($products_to_disabled as $product_to_disable) {
-                            //cambio estado deshabilitado en Modelo Plex
-                            $op_product_to_disabled = $this->plexproduct->create()
-                                ->load($product_to_disable, 'codproduct');
-                            if ($op_product_to_disabled->getIsOpEnabled()) {
-                                $op_product_to_disabled
-                                    ->setIsOpEnabled(false)
-                                    ->setObservations(" | Producto desactivado desde Plex el " . date('Y-m-d H:i:s'))
-                                    ->save();
+      foreach ($products_to_disabled as $product_to_disable) {
+          //cambio estado deshabilitado en Modelo Plex
+          $op_product_to_disabled = $this->plexproduct->create()
+              ->load($product_to_disable, 'codproduct');
+          if ($op_product_to_disabled->getIsOpEnabled()) {
+              $op_product_to_disabled
+                  ->setIsOpEnabled(false)
+                  ->setObservations(" Producto desactivado desde Plex el " . date('Y-m-d H:i:s'))
+                  ->save();
 
-                                //actualizo en Magento el status
-                                /** @var ProductInterface $mag_product_to_disabled */
-                                $mag_product_to_disabled = $this->productRepository->get(
-                                    $op_product_to_disabled->getSku(),
-                                    true,
-                                    0,
-                                    true
-                                );
-                                $mag_product_to_disabled->setStatus(Product\Attribute\Source\Status::STATUS_DISABLED);
-                                $this->logger
-                                    ->info(" || Jotadevs Update Product || Deshabilitando en Magento producto: "
-                                    . $mag_product_to_disabled->getId() . " - >>"
-                                    . $mag_product_to_disabled->getStatus());
-                                $this->productRepository->save($mag_product_to_disabled);
+              //actualizo en Magento el status
+              /** @var ProductInterface $mag_product_to_disabled */
+    /*$mag_product_to_disabled = $this->productRepository->get(
+        $op_product_to_disabled->getSku(),
+        true,
+        0,
+        true
+    );
+    $mag_product_to_disabled->setStatus(Product\Attribute\Source\Status::STATUS_DISABLED);
+    $this->logger
+        ->info(" || Jotadevs Update Product || Deshabilitando en Magento producto: "
+        . $mag_product_to_disabled->getId() . " - >>"
+        . $mag_product_to_disabled->getStatus());
+    $this->productRepository->save($mag_product_to_disabled);
                             }
                         }
                     }
@@ -1391,10 +1363,10 @@ class OnzePlexApi
                                " Products Received: " . count($result['result']) .
                                " Products Updated: " . count($op_products) .
                                " Products Disabled: " . count(
-                                   array_diff(
-                                       $products_to_update->getColumnValues('codproduct'),
-                                       $op_products_codes
-                                   )
+       array_diff(
+           $products_to_update->getColumnValues('codproduct'),
+           $op_products_codes
+       )
                                );
                     $this->logger->info(" || Jotadevs Update Product || " . $message);
                     $messages [$i] = [
@@ -1428,5 +1400,304 @@ class OnzePlexApi
             }
         }
         return $messages;
+    }*/
+    /**
+     * @return array
+     */
+    public function updateProductsOrchestor()
+    {
+        $total_products_disabled = [];
+        $total_products_disabled_new = [];
+        $total_products_disabled_for_price = [];
+        $total_products_updated = [];
+        $total_products_requested = [];
+        $messages = [];
+        $total_time = $this->timezone->date();
+        //busco los productos en base intermedia.
+        $products_to_update = $this->plexproduct->create()->getCollection()
+            ->addFieldToFilter('is_synchronized', ['eq' => true])
+            ->setPageSize(400);
+        $pages = $products_to_update->getLastPageNumber();
+        for ($i = 1; $i <= $pages; $i++) {
+            $products_to_update = $this->plexproduct->create()->getCollection()
+                ->addFieldToFilter('is_synchronized', ['eq' => true])
+                ->setPageSize(400);
+            $this->logger->info(" || Jotadevs Update Product || Comenzando con Página nro.: " . $i);
+            $products_to_update->setCurPage($i);
+            //llamamos a la RestApi del Erp y traeos los productos.
+            $result = $this->getProductsOnexPlex(
+                null,
+                $products_to_update->getColumnValues('codproduct')
+            );
+
+            if ($result['state'] == 'success') {
+                $rs_process = $this->processUpdateProductsFromPlex($result['result']);
+                //Analizar los que no recibi, es decir que fueron deshabilitados en Plex
+                $products_to_disabled = array_diff(
+                    $products_to_update->getColumnValues('codproduct'),
+                    $rs_process['op_products']
+                );
+
+                //Deshabilito lo que no me devuelva el WS de plex y ya tengo en la base
+                $new_op_product_disabled = $this->disabledProductFromPlex($products_to_disabled);
+
+                $total_products_disabled = array_merge($total_products_disabled, $products_to_disabled);
+
+                $total_products_disabled_new = array_merge($total_products_disabled_new, $new_op_product_disabled);
+
+                $total_products_disabled_for_price = array_merge(
+                    $total_products_disabled_for_price,
+                    $rs_process['product_disabled_for_price']
+                );
+                $total_products_updated = array_merge(
+                    $total_products_updated,
+                    $rs_process['product_updated_and_enabled_codes']
+                );
+                $total_products_requested = array_merge(
+                    $total_products_requested,
+                    $products_to_update->getColumnValues('codproduct')
+                );
+
+                $this->logger->debug(" || Jotadevs Update Product || Qty productos consultados: " .
+                    count($products_to_update->getColumnValues('codproduct')));
+                $this->logger->debug(" || Jotadevs Update Product || Qty Productos a deshabilitar : " .
+                    count($products_to_disabled));
+                $this->logger->debug(" || Jotadevs Update Product || Qty productos nuevos dehabilitado: " .
+                    count($new_op_product_disabled));
+
+                $this->logger->debug(" || Jotadevs Update Product || Qty Productos a deshabilitar x pcio : " .
+                    count($rs_process['product_disabled_for_price']));
+                $this->logger->debug(" || Jotadevs Update Product || Qty Productos a actualizar : " .
+                    count($rs_process['product_updated_and_enabled']));
+
+                //Actualizo los productos validados para actualizar en Magento
+                try {
+                    $products_mag_disabled = $this->updateMagentoProduct(
+                        [
+                            'products' => $products_to_disabled,
+                            'type' => 'products_disabled_from_plex'
+                        ]
+                    );
+                    $products_mag_updated = $this->updateMagentoProduct(
+                        [
+                            'products' => $rs_process['product_updated_and_enabled'],
+                            'type' => 'products_to_update'
+                        ]
+                    );
+                    $products_mag_disabled_for_price_variation = $this->updateMagentoProduct(
+                        [
+                            'products' => $rs_process['product_disabled_for_price'],
+                            'type' => 'products_to_disable_for_price'
+                        ]
+                    );
+                } catch (CouldNotSaveException $e) {
+                } catch (InputException $e) {
+                } catch (StateException $e) {
+                } catch (\Exception $e) {
+                }
+            } else {
+                $this->logger->info(" || Jotadevs Update Product || " . $result['message']);
+                $messages = array_merge($messages, [
+                        'page ' . $i => [
+                            'state' => 'error',
+                            'message' => $result['message']
+                        ]
+                    ]);
+            }
+        }
+        $total_time_message = "Tiempo total de ejecución : " .
+            date_diff($total_time, $this->timezone->date())->format("%i:%s");
+        $this->logger->info($total_time_message);
+        return [
+          'products_processed' => count($products_to_update->getAllIds()),
+          'products_updated' => count($total_products_updated),
+          'products_disabled' => count($total_products_disabled),
+          'total_products_disabled_new' => count($total_products_disabled_new),
+          'products_disabled_for_price' => count($total_products_disabled_for_price),
+          'products_requested' => count($total_products_requested),
+          'error_messages' => $messages,
+          'total_time' => $total_time_message
+        ];
+    }
+
+    /**
+     * @param array $productos
+     */
+    public function processUpdateProductsFromPlex(array $productos)
+    {
+        $op_products = [];
+        $op_products_codes_enabled = [];
+        $op_products_enabled = [];
+        $op_products_codes_price_disabled = [];
+        //recorro el array de productos para actualizar los datos
+        foreach ($productos as $op_api_product) {
+            $op_product = $this->plexproduct->create()->load($op_api_product['codproducto'], 'codproduct');
+            array_push($op_products, $op_product->getSku());
+            foreach ($op_api_product as $key => $value) {
+                ($key == 'rubro') ? $op_product->setRubro($value) : null;
+                ($key == 'subrubro') ? $op_product->setSubrubro($value) : null;
+                ($key == 'idrubro') ? $op_product->setIdrubro($value) : null;
+                ($key == 'idSubro') ? $op_product->setIdrubro($value) : null;
+                ($key == 'idlaboratorio') ? $op_product->setIdLaboratorio($value) : null;
+                if ($key == 'grupos') {
+                    foreach ($value as $gr) {
+                        foreach ($gr as $key_gr => $value_gr) {
+                            ($key_gr == 'idgrupo') ? $op_product->setIdgrupo($value_gr) : null;
+                            ($key_gr == 'grupo') ? $op_product->setGrupo($value_gr) : null;
+                        }
+                    }
+                }
+                //Anilisis de Variacion de Precio.
+                if ($key == 'precio') {
+                    $rs = $this->evaluatePriceVariation(
+                        floatval(str_replace(',', '.', str_replace('.', '', $value))),
+                        $op_product->getPrecio()
+                    );
+                    if ($rs['price_status'] === 'price_not_valid') {
+                        array_push($op_products_codes_price_disabled, $op_product->getSku());
+                        $op_product->setIsOpEnabled(false);
+                        $op_product->setObservations(
+                            "Producto deshabilitado luego del analisis de precio " . $rs['message']
+                        );
+                    } else {
+                        array_push($op_products_codes_enabled, $op_product->getSku());
+                        $op_products_enabled [] = $op_product;
+                        $op_product->setIsOpEnabled(true);
+                        $op_product->setPrecio($value);
+                        $op_product->setObservations(
+                            "Producto habilitado y actualizado el " . date('Y-m-d H:i:s')
+                        );
+                    }
+                }
+            }
+            $op_product->save();
+        }
+
+        return [
+            'op_products' => $op_products,
+            'product_updated_and_enabled_codes' => $op_products_codes_enabled,
+            'product_updated_and_enabled' => $op_products_enabled,
+            'product_disabled_for_price' => $op_products_codes_price_disabled,
+            ];
+    }
+
+    public function disabledProductFromPlex(array $products_codes)
+    {
+        $new_op_products_disabled = [];
+        foreach ($products_codes as $code) {
+            //cambio estado deshabilitado en Modelo Plex
+            $op_product_to_disabled = $this->plexproduct->create()
+                    ->load($code, 'codproduct');
+            if ($op_product_to_disabled->getIsOpEnabled()) {
+                array_push($new_op_products_disabled, $code);
+                $op_product_to_disabled
+                        ->setIsOpEnabled(false)
+                        ->setObservations(" Producto desactivado desde Plex el " . date('Y-m-d H:i:s'))
+                        ->save();
+                $this->logger->debug(" Deshabilitando Producto en Middleware OP " . $code);
+            } else {
+                $this->logger->debug(" Producto ya deshabilitado en Middleware OP " . $code);
+            }
+        }
+        return $new_op_products_disabled;
+    }
+
+    /**
+     * @param $precio
+     * @param $precio_actual
+     * @return string[]
+     */
+    public function evaluatePriceVariation($precio, $precio_actual)
+    {
+        if ($precio > $precio_actual) {
+            $this->logger->debug(" El precio nuevo es mayor ");
+            $variation = ((($precio - $precio_actual) / $precio_actual) * 100);
+            if ($variation > 15) {
+                $msg = "La variacion es mayor al 15%: " . $variation . " Precio nuevo: "
+                    . $precio . " Precio actual: " . $precio_actual;
+                $this->logger->debug($msg);
+                $status = 'price_not_valid';
+            } else {
+                $msg = " La variacion es menor al 15% " . $variation . " Precio nuevo: "
+                    . $precio . " Precio actual: " . $precio_actual;
+                $this->logger->debug($msg);
+                $status = 'price_valid';
+            }
+        } elseif ($precio < $precio_actual) {
+            $msg = " Precio rebajado deshabilitar producto, rebajado en: " .
+                ($precio_actual - $precio) . " Precio nuevo: "
+                . $precio . " Precio actual: " . $precio_actual;
+            $this->logger->debug($msg);
+            $status = 'price_not_valid';
+        } else {
+            $msg = " Sin Variacion de precio ";
+            $this->logger->debug($msg);
+            $status = 'price_valid';
+        }
+        return [
+            'message' => $msg,
+            'price_status' => $status
+        ];
+    }
+
+    /**
+     * @param array $op_products
+     * @return int|void
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     * @throws \Exception
+     */
+    public function updateMagentoProduct(array $op_products)
+    {
+        if ($op_products['type'] == 'products_to_update') {
+            foreach ($op_products['products'] as $op_product) {
+                $mag_product = $this->productRepository->get($op_product->getSku());
+                $plex_laboratorio = $this->plexlaboratorio->create()
+                    ->load($op_product->getIdLaboratorio(), 'id_plex');
+                $mag_product
+                    ->setPrice($op_product->getPrecio())
+                    ->setStatus(Product\Attribute\Source\Status::STATUS_ENABLED)
+                    ->setCustomAttribute('laboratorio', $plex_laboratorio->getName())
+                    ->setCustomAttribute('rubro_plex', $op_product->getRubro())
+                    ->setCustomAttribute('subrubro_plex', $op_product->getSubrubro())
+                    ->setCustomAttribute('grupo_plex', $op_product->getGrupo());
+                $this->productResource
+                    ->saveAttribute($mag_product, 'price')
+                    ->saveAttribute($mag_product, 'laboratorio')
+                    ->saveAttribute($mag_product, 'rubro_plex')
+                    ->saveAttribute($mag_product, 'subrubro_plex')
+                    ->saveAttribute($mag_product, 'grupo_plex')
+                    ->saveAttribute($mag_product, 'status');
+                //$this->productRepository->save($mag_product);
+            }
+        } else {
+            foreach ($op_products['products'] as $code) {
+                $mag_product = $this->productRepository->get($code);
+                $mag_product->setStatus(Product\Attribute\Source\Status::STATUS_DISABLED);
+                $op_products['type'] == 'products_disabled_from_plex' ?
+                    $mag_product->setCustomAttribute(
+                        'observaciones_plex',
+                        "Producto Deshabilitado desde Plex"
+                    ) :
+                    $mag_product->setCustomAttribute(
+                        'observaciones_plex',
+                        "Producto Deshabilitado por Variacion de Precio"
+                    );
+                $this->productResource
+                    ->saveAttribute($mag_product, 'status')
+                    ->saveAttribute($mag_product, 'observaciones_plex');
+            }
+        }
+        return count($op_products);
+    }
+
+    public function getAllOpProducts(){
+        $products_to_update = $this->plexproduct->create()->getCollection()
+           // ->addFieldToFilter('is_synchronized', ['eq' => true])
+        ;
+        return [
+            //'query' => $products_to_update->getSelectSql(),
+            'cantidad' => count($products_to_update->getAllIds())
+
+        ];
     }
 }

@@ -25,6 +25,9 @@
                 <item name="jotadevs_onzeplexconnector_stock_update" xsi:type="object">
                     Jotadevs\OnzePlexConnector\Console\Command\updateStock
                 </item>
+                <item name="jotadevs_onzeplexconnector_update_product" xsi:type="object">
+                    Jotadevs\OnzePlexConnector\Console\Command\UpdateProduct
+                </item>
             </argument>
         </arguments>
     </type>
