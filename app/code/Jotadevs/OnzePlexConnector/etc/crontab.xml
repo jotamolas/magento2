@@ -11,13 +11,13 @@
             name="jotadevs_op_importNewProducts"
             instance="Jotadevs\OnzePlexConnector\Cron\importNewProducts"
             method="importNewProducts">
-            <schedule>00 */12 * * *</schedule>
+            <schedule>2 */12 * * *</schedule>
         </job>
         <job
             name="jotadevs_op_updateProduct"
             instance="Jotadevs\OnzePlexConnector\Cron\updateProducts"
             method="updateProducts">
-            <schedule>00 */6 * * *</schedule>
+            <schedule>7 */6 * * *</schedule>
         </job>
     </group>
 </config>

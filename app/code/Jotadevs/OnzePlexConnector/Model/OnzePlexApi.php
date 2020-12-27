@@ -14,6 +14,7 @@ use Magento\CatalogInventory\Api\StockRegistryInterface;
 use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Framework\Exception\InputException;
+use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\StateException;
 use Magento\Framework\HTTP\ZendClient;
 use Magento\Framework\Serialize\Serializer\Json;
@@ -22,6 +23,7 @@ use Magento\Framework\Validation\ValidationException;
 use Magento\InventoryApi\Api\Data\SourceItemInterfaceFactory;
 use Magento\InventoryApi\Api\SourceItemsSaveInterface;
 use Magento\Sales\Api\OrderRepositoryInterface;
+use Magento\Sales\Model\Order;
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory;
 use Psr\Log\LoggerInterface;
 
@@ -354,6 +356,7 @@ class OnzePlexApi
                     if ($op_product_by_id->isEmpty()) {
                         if ($op_product_by_name->isEmpty()) {
                             $op_product = $this->plexproduct->create();
+                            $this->logger->debug(" Creando Producto: " . $op_api_product['codproducto']);
                             foreach ($op_api_product as $key => $value) {
                                 if ($key == 'codproducto') {
                                     $op_product->setSku($value);
@@ -383,17 +386,12 @@ class OnzePlexApi
                             $op_products[] = $op_product;
                         } else {
                             $this->logger
-                                ->error("Productos Duplicados ?? - " .
+                                ->error("Productos Duplicados  - " .
                                     $op_api_product['codproducto'] . " - " .
                                     $op_api_product['producto']);
                         }
-                    } else {
-                        $this->logger->error("Productos Ya Guardados ?? - " .
-                            $op_api_product['codproducto'] . " - " .
-                            $op_api_product['producto']);
                     }
                 }
-
                 return [
                     'state' => 'success',
                     'received' => count($result['result']),
@@ -692,6 +690,8 @@ class OnzePlexApi
         $new_op_products_collection
             ->addFieldToFilter('is_synchronized', ['eq' => false])
             ->load();
+        $this->logger->debug("Se encontraron "
+            . count($new_op_products_collection->getAllIds()) . " productos para sincronizar con Magento");
         //Verifico que existan productos Plex en la tabla
         if (!empty($new_op_products_collection->getColumnValues('id'))) {
             //seteo area de ejecucion como global front y backend
@@ -700,8 +700,12 @@ class OnzePlexApi
              *  recorro los nuevos productos obtenidos y por cada uno los inserto
              */
             foreach ($new_op_products_collection as $new_op_product) {
-
-                    /** @var ProductInterface $mag_product */
+                $this->logger->debug(
+                    " Convirtiendo producto Plex Id: " . $new_op_product->getId()
+                    . " SKU: " . $new_op_product->getSku()
+                    . " Producto: " . $new_op_product->getProducto()
+                );
+                /** @var ProductInterface $mag_product */
                 $mag_product = $this->productFactory->create();
                 $mag_product->setSku($new_op_product->getSku())
                         ->setName($new_op_product->getProducto())
@@ -884,36 +888,65 @@ class OnzePlexApi
      *      2.1 Busco todas las ordenes en plexOrder sin estar sincronizadas y traigo desde magento los datos necesarios para sincronizar --> getMagentoOrdersToSync.
      *      2.2 Envio de a una Post al ws de Plex.     *
      */
-    public function prepareOrderToSync()
+    /**
+     * @param Order|null $order
+     * @return array
+     * @throws \Exception
+     */
+    public function prepareOrderToSync(Order $order = null)
     {
-        $OrderCollection = $this->orderCollectionFactory->create()
-            ->addFieldToSelect('*')
-            ->addFieldToFilter('status', ['eq' => 'pending']);
         $orders_syncs = [];
-        foreach ($OrderCollection as $order) {
-            $plexOrder = $this->plexorder->create()->load($order->getId(), 'id_magento');
-            if ($plexOrder->isEmpty()) {
-                $newPlexOrder = $this->plexorder->create();
-                $newPlexOrder->setIdMagento($order->getId())
-                    ->setIsSynchronized(false);
-                $newPlexOrder->setIsObjectNew(true);
-                $newPlexOrder->save();
-                $orders_syncs[] = $newPlexOrder;
-            }
-        }
+        if (!$order) {
+            $OrderCollection = $this->orderCollectionFactory->create()
+                ->addFieldToSelect('*')
+                ->addFieldToFilter('status', ['eq' => 'pending']);
 
+            foreach ($OrderCollection as $order) {
+                $plexOrder = $this->plexorder->create()->load($order->getId(), 'id_magento');
+                $newPlexOrder = $this->checkAndSavePlexOrder($plexOrder, $order->getId());
+                $newPlexOrder ? $orders_syncs[] = $newPlexOrder : null;
+            }
+        } else {
+            $plexOrder = $this->plexorder->create()->load($order->getId(), 'id_magento');
+            $newPlexOrder = $this->checkAndSavePlexOrder($plexOrder, $order->getId());
+            $newPlexOrder ? $orders_syncs[] = $newPlexOrder : null;
+        }
         return[
-          'status' => 'ok',
-          'qty' => count($orders_syncs)
+            'status' => 'ok',
+            'qty' => count($orders_syncs)
         ];
     }
-    public function getMagentoOrdersToSync()
+
+    public function checkAndSavePlexOrder(PlexOrder $plexOrder, $id_magento)
     {
-        $plexOrderCollection = $this->plexorder->create()->getCollection()
-            ->addFieldToFilter('is_synchronized', ['eq' => false])
-            //->addFieldToFilter('id_magento', ['eq' => '16'])
-            ->load();
-        $plexOrderToSync_Ids = $plexOrderCollection->getColumnValues('id_magento');
+        if ($plexOrder->isEmpty()) {
+            $newPlexOrder = $this->plexorder->create();
+            $newPlexOrder->setIdMagento($id_magento)
+                ->setIsSynchronized(false);
+            $newPlexOrder->setIsObjectNew(true);
+            $newPlexOrder->save();
+            return $newPlexOrder;
+        }
+        return null;
+    }
+
+    /**
+     * @param null $order_id
+     * @return array
+     * @throws LocalizedException
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    public function getMagentoOrdersToSync($order_id = null)
+    {
+        if (!$order_id) {
+            $plexOrderCollection = $this->plexorder->create()->getCollection()
+                ->addFieldToFilter('is_synchronized', ['eq' => false])
+                //->addFieldToFilter('id_magento', ['eq' => '16'])
+                ->load();
+            $plexOrderToSync_Ids = $plexOrderCollection->getColumnValues('id_magento');
+        } else {
+            $plexOrderToSync_Ids = [$order_id];
+        }
         //var_dump($plexOrderToSync_Ids);
         if (!empty($plexOrderToSync_Ids)) {
             $magOrders = [];
@@ -921,8 +954,8 @@ class OnzePlexApi
                 ->addAttributeToSelect("*")
                 ->addFieldToFilter('entity_id', ['in' => $plexOrderToSync_Ids]);
             // var_dump($magOrderCollection->toArray());
-            /** @var \Magento\Sales\Model\Order $magOrder */
             $rs_order = [];
+            /** @var Order $magOrder */
             foreach ($magOrderCollection as $magOrder) {
                 $customer = $this->_customerRepository->getById($magOrder->getCustomerId());
                 /** @var \Magento\Sales\Api\Data\OrderAddressInterface $shippingAddress */
@@ -1085,7 +1118,7 @@ class OnzePlexApi
             ->addAttributeToSelect("*")
             ->addFieldToFilter('status', ['eq' => 'sync_plex']);
         /*->addFieldToFilter('entity_id', ['eq' => '15'])*/
-        /** @var \Magento\Sales\Model\Order $mag_order */
+        /** @var Order $mag_order */
         if (!empty($mag_orders_collection)) {
             $pagos = [];
             foreach ($mag_orders_collection as $mag_order) {
@@ -1093,9 +1126,14 @@ class OnzePlexApi
                  * verifico que este aprovado y acreditado asi abanzo
                  */
                 if (
-                    in_array($mag_order->getPayment()->getMethod(), ['mercadopago_custom','mercadopago_customticket']) and
-                    $mag_order->getPayment()->getAdditionalInformation()['paymentResponse']['status'] == 'approved' and
-                    $mag_order->getPayment()->getAdditionalInformation()['paymentResponse']['status_detail'] == 'accredited'
+                    in_array(
+                        $mag_order->getPayment()->getMethod(),
+                        ['mercadopago_custom','mercadopago_customticket']
+                    ) and
+                    $mag_order->getPayment()
+                        ->getAdditionalInformation()['paymentResponse']['status'] == 'approved' and
+                    $mag_order->getPayment()
+                        ->getAdditionalInformation()['paymentResponse']['status_detail'] == 'accredited'
                 ) {
                     /* foreach ($mag_order->getAllVisibleItems() as $item) {
 
@@ -1402,9 +1440,11 @@ class OnzePlexApi
         return $messages;
     }*/
     /**
+     * @param bool $evaulate_price_option
      * @return array
+     * @throws \Exception
      */
-    public function updateProductsOrchestor()
+    public function updateProductsOrchestor(bool $evaulate_price_option = null)
     {
         $total_products_disabled = [];
         $total_products_disabled_new = [];
@@ -1413,117 +1453,132 @@ class OnzePlexApi
         $total_products_requested = [];
         $messages = [];
         $total_time = $this->timezone->date();
-        //busco los productos en base intermedia.
-        $products_to_update = $this->plexproduct->create()->getCollection()
-            ->addFieldToFilter('is_synchronized', ['eq' => true])
-            ->setPageSize(400);
-        $pages = $products_to_update->getLastPageNumber();
-        for ($i = 1; $i <= $pages; $i++) {
+        //Envio un prd dummy para testear ws
+        $ws_plex_status = $this->getProductsOnexPlex(null, [1101]);
+        if ($ws_plex_status['state'] == 'success') {
+            //busco los productos en base intermedia.
             $products_to_update = $this->plexproduct->create()->getCollection()
                 ->addFieldToFilter('is_synchronized', ['eq' => true])
                 ->setPageSize(400);
-            $this->logger->info(" || Jotadevs Update Product || Comenzando con Página nro.: " . $i);
-            $products_to_update->setCurPage($i);
-            //llamamos a la RestApi del Erp y traeos los productos.
-            $result = $this->getProductsOnexPlex(
-                null,
-                $products_to_update->getColumnValues('codproduct')
-            );
-
-            if ($result['state'] == 'success') {
-                $rs_process = $this->processUpdateProductsFromPlex($result['result']);
-                //Analizar los que no recibi, es decir que fueron deshabilitados en Plex
-                $products_to_disabled = array_diff(
-                    $products_to_update->getColumnValues('codproduct'),
-                    $rs_process['op_products']
-                );
-
-                //Deshabilito lo que no me devuelva el WS de plex y ya tengo en la base
-                $new_op_product_disabled = $this->disabledProductFromPlex($products_to_disabled);
-
-                $total_products_disabled = array_merge($total_products_disabled, $products_to_disabled);
-
-                $total_products_disabled_new = array_merge($total_products_disabled_new, $new_op_product_disabled);
-
-                $total_products_disabled_for_price = array_merge(
-                    $total_products_disabled_for_price,
-                    $rs_process['product_disabled_for_price']
-                );
-                $total_products_updated = array_merge(
-                    $total_products_updated,
-                    $rs_process['product_updated_and_enabled_codes']
-                );
-                $total_products_requested = array_merge(
-                    $total_products_requested,
+            $pages = $products_to_update->getLastPageNumber();
+            for ($i = 1; $i <= $pages; $i++) {
+                $products_to_update = $this->plexproduct->create()->getCollection()
+                    ->addFieldToFilter('is_synchronized', ['eq' => true])
+                    ->setPageSize(400);
+                $this->logger->info(" || Jotadevs Update Product || Comenzando con Página nro.: " . $i);
+                $products_to_update->setCurPage($i);
+                //llamamos a la RestApi del Erp y traeos los productos.
+                $result = $this->getProductsOnexPlex(
+                    null,
                     $products_to_update->getColumnValues('codproduct')
                 );
 
-                $this->logger->debug(" || Jotadevs Update Product || Qty productos consultados: " .
-                    count($products_to_update->getColumnValues('codproduct')));
-                $this->logger->debug(" || Jotadevs Update Product || Qty Productos a deshabilitar : " .
-                    count($products_to_disabled));
-                $this->logger->debug(" || Jotadevs Update Product || Qty productos nuevos dehabilitado: " .
-                    count($new_op_product_disabled));
+                if ($result['state'] == 'success') {
+                    $rs_process = $this->processUpdateProductsFromPlex($result['result'], $evaulate_price_option);
+                    //Analizar los que no recibi, es decir que fueron deshabilitados en Plex
+                    $products_to_disabled = array_diff(
+                        $products_to_update->getColumnValues('codproduct'),
+                        $rs_process['op_products']
+                    );
 
-                $this->logger->debug(" || Jotadevs Update Product || Qty Productos a deshabilitar x pcio : " .
-                    count($rs_process['product_disabled_for_price']));
-                $this->logger->debug(" || Jotadevs Update Product || Qty Productos a actualizar : " .
-                    count($rs_process['product_updated_and_enabled']));
+                    //Deshabilito lo que no me devuelva el WS de plex y ya tengo en la base
+                    $new_op_product_disabled = $this->disabledProductFromPlex($products_to_disabled);
 
-                //Actualizo los productos validados para actualizar en Magento
-                try {
-                    $products_mag_disabled = $this->updateMagentoProduct(
-                        [
-                            'products' => $products_to_disabled,
-                            'type' => 'products_disabled_from_plex'
-                        ]
+                    $total_products_disabled = array_merge($total_products_disabled, $products_to_disabled);
+
+                    $total_products_disabled_new = array_merge($total_products_disabled_new, $new_op_product_disabled);
+
+                    $total_products_disabled_for_price = array_merge(
+                        $total_products_disabled_for_price,
+                        $rs_process['product_disabled_for_price']
                     );
-                    $products_mag_updated = $this->updateMagentoProduct(
-                        [
-                            'products' => $rs_process['product_updated_and_enabled'],
-                            'type' => 'products_to_update'
-                        ]
+                    $total_products_updated = array_merge(
+                        $total_products_updated,
+                        $rs_process['product_updated_and_enabled_codes']
                     );
-                    $products_mag_disabled_for_price_variation = $this->updateMagentoProduct(
-                        [
-                            'products' => $rs_process['product_disabled_for_price'],
-                            'type' => 'products_to_disable_for_price'
-                        ]
+                    $total_products_requested = array_merge(
+                        $total_products_requested,
+                        $products_to_update->getColumnValues('codproduct')
                     );
-                } catch (CouldNotSaveException $e) {
-                } catch (InputException $e) {
-                } catch (StateException $e) {
-                } catch (\Exception $e) {
-                }
-            } else {
-                $this->logger->info(" || Jotadevs Update Product || " . $result['message']);
-                $messages = array_merge($messages, [
+
+                    $this->logger->debug(" || Jotadevs Update Product || Qty productos consultados: " .
+                        count($products_to_update->getColumnValues('codproduct')));
+                    $this->logger->debug(" || Jotadevs Update Product || Qty Productos a deshabilitar : " .
+                        count($products_to_disabled));
+                    $this->logger->debug(" || Jotadevs Update Product || Qty productos nuevos dehabilitado: " .
+                        count($new_op_product_disabled));
+
+                    $this->logger->debug(" || Jotadevs Update Product || Qty Productos a deshabilitar x pcio : " .
+                        count($rs_process['product_disabled_for_price']));
+                    $this->logger->debug(" || Jotadevs Update Product || Qty Productos a actualizar : " .
+                        count($rs_process['product_updated_and_enabled']));
+
+                    //Actualizo los productos validados para actualizar en Magento
+                    try {
+                        $products_mag_disabled = $this->updateMagentoProduct(
+                            [
+                                'products' => $products_to_disabled,
+                                'type' => 'products_disabled_from_plex'
+                            ]
+                        );
+                        $products_mag_updated = $this->updateMagentoProduct(
+                            [
+                                'products' => $rs_process['product_updated_and_enabled'],
+                                'type' => 'products_to_update'
+                            ]
+                        );
+                        $products_mag_disabled_for_price_variation = $this->updateMagentoProduct(
+                            [
+                                'products' => $rs_process['product_disabled_for_price'],
+                                'type' => 'products_to_disable_for_price'
+                            ]
+                        );
+                    } catch (CouldNotSaveException $e) {
+                    } catch (InputException $e) {
+                    } catch (StateException $e) {
+                    } catch (\Exception $e) {
+                    }
+                } else {
+                    $this->logger->info(" || Jotadevs Update Product || " . $result['message']);
+                    $messages = array_merge($messages, [
                         'page ' . $i => [
                             'state' => 'error',
                             'message' => $result['message']
                         ]
                     ]);
+                }
             }
+            $total_time_message = "Tiempo total de ejecución : " .
+                date_diff($total_time, $this->timezone->date())->format("%i:%s");
+            $this->logger->info($total_time_message);
+            return [
+                'products_processed' => count($products_to_update->getAllIds()),
+                'products_updated' => count($total_products_updated),
+                'products_disabled' => count($total_products_disabled),
+                'total_products_disabled_new' => count($total_products_disabled_new),
+                'products_disabled_for_price' => count($total_products_disabled_for_price),
+                'products_requested' => count($total_products_requested),
+                'error_messages' => $messages,
+                'total_time' => $total_time_message
+            ];
+        } else {
+            $total_time_message = " || Jotadevs Update Stock Product || Tiempo total de ejecución : "
+                . date_diff($total_time, $this->timezone->date())->format("%i:%s");
+            $error_msg = " No se pudo conectar con el WS de Plex. Error: " .
+            $ws_plex_status['message'] . " Mensaje: " . $ws_plex_status['message'];
+            $this->logger->debug($error_msg);
+            $this->logger->info($total_time_message);
+            throw new LocalizedException(__('%1', $error_msg));
         }
-        $total_time_message = "Tiempo total de ejecución : " .
-            date_diff($total_time, $this->timezone->date())->format("%i:%s");
-        $this->logger->info($total_time_message);
-        return [
-          'products_processed' => count($products_to_update->getAllIds()),
-          'products_updated' => count($total_products_updated),
-          'products_disabled' => count($total_products_disabled),
-          'total_products_disabled_new' => count($total_products_disabled_new),
-          'products_disabled_for_price' => count($total_products_disabled_for_price),
-          'products_requested' => count($total_products_requested),
-          'error_messages' => $messages,
-          'total_time' => $total_time_message
-        ];
     }
 
     /**
      * @param array $productos
+     * @param bool $evaluate_price_option
+     * @return array[]
+     * @throws \Exception
      */
-    public function processUpdateProductsFromPlex(array $productos)
+    public function processUpdateProductsFromPlex(array $productos, bool $evaluate_price_option = false)
     {
         $op_products = [];
         $op_products_codes_enabled = [];
@@ -1549,16 +1604,26 @@ class OnzePlexApi
                 }
                 //Anilisis de Variacion de Precio.
                 if ($key == 'precio') {
-                    $rs = $this->evaluatePriceVariation(
-                        floatval(str_replace(',', '.', str_replace('.', '', $value))),
-                        $op_product->getPrecio()
-                    );
-                    if ($rs['price_status'] === 'price_not_valid') {
-                        array_push($op_products_codes_price_disabled, $op_product->getSku());
-                        $op_product->setIsOpEnabled(false);
-                        $op_product->setObservations(
-                            "Producto deshabilitado luego del analisis de precio " . $rs['message']
+                    if ($evaluate_price_option) {
+                        $rs = $this->evaluatePriceVariation(
+                            floatval(str_replace(',', '.', str_replace('.', '', $value))),
+                            $op_product->getPrecio()
                         );
+                        if ($rs['price_status'] === 'price_not_valid') {
+                            array_push($op_products_codes_price_disabled, $op_product->getSku());
+                            $op_product->setIsOpEnabled(false);
+                            $op_product->setObservations(
+                                "Producto deshabilitado luego del analisis de precio " . $rs['message']
+                            );
+                        } else {
+                            array_push($op_products_codes_enabled, $op_product->getSku());
+                            $op_products_enabled [] = $op_product;
+                            $op_product->setIsOpEnabled(true);
+                            $op_product->setPrecio($value);
+                            $op_product->setObservations(
+                                "Producto habilitado y actualizado el " . date('Y-m-d H:i:s')
+                            );
+                        }
                     } else {
                         array_push($op_products_codes_enabled, $op_product->getSku());
                         $op_products_enabled [] = $op_product;
@@ -1651,22 +1716,27 @@ class OnzePlexApi
         if ($op_products['type'] == 'products_to_update') {
             foreach ($op_products['products'] as $op_product) {
                 $mag_product = $this->productRepository->get($op_product->getSku());
+                $mag_product->getSku() == '3003947764' ?
+                    $this->logger->debug("Actualizando el producto 3003947764") : null;
                 $plex_laboratorio = $this->plexlaboratorio->create()
                     ->load($op_product->getIdLaboratorio(), 'id_plex');
                 $mag_product
                     ->setPrice($op_product->getPrecio())
                     ->setStatus(Product\Attribute\Source\Status::STATUS_ENABLED)
-                    ->setCustomAttribute('laboratorio', $plex_laboratorio->getName())
-                    ->setCustomAttribute('rubro_plex', $op_product->getRubro())
-                    ->setCustomAttribute('subrubro_plex', $op_product->getSubrubro())
-                    ->setCustomAttribute('grupo_plex', $op_product->getGrupo());
+                    ->setLaboratorio($plex_laboratorio->getName())
+                    ->setRubroPlex($op_product->getRubro())
+                    ->setSubrubroPlex($op_product->getSubrubro())
+                    ->setGrupoPlex($op_product->getGrupo())
+                    ->setObservacionesPlex("Producto actualizado el: " . date('Y-m-d H:i:s'));
                 $this->productResource
                     ->saveAttribute($mag_product, 'price')
                     ->saveAttribute($mag_product, 'laboratorio')
                     ->saveAttribute($mag_product, 'rubro_plex')
                     ->saveAttribute($mag_product, 'subrubro_plex')
                     ->saveAttribute($mag_product, 'grupo_plex')
-                    ->saveAttribute($mag_product, 'status');
+                    ->saveAttribute($mag_product, 'status')
+                    ->saveAttribute($mag_product, 'observaciones_plex');
+
                 //$this->productRepository->save($mag_product);
             }
         } else {
@@ -1690,10 +1760,11 @@ class OnzePlexApi
         return count($op_products);
     }
 
-    public function getAllOpProducts(){
+    public function getAllOpProducts()
+    {
         $products_to_update = $this->plexproduct->create()->getCollection()
            // ->addFieldToFilter('is_synchronized', ['eq' => true])
-        ;
+;
         return [
             //'query' => $products_to_update->getSelectSql(),
             'cantidad' => count($products_to_update->getAllIds())

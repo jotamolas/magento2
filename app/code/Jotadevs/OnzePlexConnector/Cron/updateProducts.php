@@ -25,13 +25,26 @@ class updateProducts
         $this->logger = $logger;
         $this->state = $state;
     }
-        public function updateProducts()
+    public function updateProducts()
     {
         //$this->state->setAreaCode(\Magento\Framework\App\Area::AREA_GLOBAL);
-        // Traigo todos los productos Plex ya sincronizados.
+
         $this->logger->debug('||Jotadevs-Cron-UpdateProducts|| Updating Products');
-        $this->plex_api->updateProductsOrchestor();
-        //$this->logger->debug('||Jotadevs-Cron-UpdateProducts|| Updated --> ' . $products_plex_updated['message']);
+
+        $rs = $this->plex_api->updateProductsOrchestor(true);
+
+        $this->logger->debug('||Jotadevs-Cron-UpdateProducts|| Total de Tiempo de ejecucion--> ' . $rs['total_time']);
+        $this->logger->debug('||Jotadevs-Cron-UpdateProducts|| Products Processed --> ' . $rs['products_processed']);
+        $this->logger->debug('||Jotadevs-Cron-UpdateProducts|| Products Updated --> ' . $rs['products_updated']);
+        $this->logger->debug('||Jotadevs-Cron-UpdateProducts|| Products Disabled --> ' . $rs['products_disabled']);
+        $this->logger->debug('||Jotadevs-Cron-UpdateProducts|| Products New Disabled --> ' .
+            $rs['total_products_disabled_new']);
+        $this->logger->debug('||Jotadevs-Cron-UpdateProducts|| Products Disabled for Price --> ' .
+            $rs['products_disabled_for_price']);
+        foreach ($rs['error_messages'] as $error_key => $error_value) {
+            $this->logger->debug('||Jotadevs-Cron-UpdateProducts|| Error en  --> ' .
+                $error_key . " Mensaje: " . $error_value['message']);
+        }
         return $this;
     }
 }
