@@ -227,30 +227,6 @@ class OnzePlexApi
             ];
         }
     }
-
-    /*public function getSucursalesPlex()
-    {
-        $this->zendClient->resetParameters();
-        try {
-            $this->zendClient->setUri($this->uriProd . "ec_getsucursales");
-            $this->zendClient->setMethod(ZendClient::GET);
-            $this->zendClient->setAuth($this->userProd, $this->passwordProd);
-            $this->zendClient->setHeaders(['Content-Type' => 'application/json']);
-
-            $response = $this->zendClient->request();
-            $response_array = $this->json->unserialize($response->getBody());
-            return [
-                'state' => 'success',
-                'result' => $response_array['response']['content']['sucursales']
-            ];
-        } catch (\Zend_Http_Client_Exception $e) {
-            return [
-                'state' => 'error',
-                'code' => $e->getCode(),
-                'message' => $e->getMessage()
-            ];
-        }
-    }*/
     public function getLaboratoriosFromPlex()
     {
         $this->zendClient->resetParameters();
@@ -273,56 +249,6 @@ class OnzePlexApi
             ];
         }
     }
-    /*public function getPedidos($id_pedido = 'E00200000005')
-    {
-        $this->zendClient->resetParameters();
-        try {
-            $this->zendClient->setUri($this->uriProd . "ec_getpedidos");
-            $this->zendClient->setMethod(ZendClient::GET);
-            $this->zendClient->setAuth($this->userProd, $this->passwordProd);
-            $this->zendClient->setHeaders(['Content-Type' => 'application/json']);
-            $this->zendClient->setParameterGet(
-                'idpedido',
-                $id_pedido
-            );
-            $response = $this->zendClient->request();
-            $response_array = $this->json->unserialize($response->getBody());
-            return [
-                'state' => 'success',
-                'result' => $response_array['response']['content']['pedidos']
-            ];
-        } catch (\Zend_Http_Client_Exception $e) {
-            return [
-                'state' => 'error',
-                'code' => $e->getCode(),
-                'message' => $e->getMessage()
-            ];
-        }
-    }*/
-    /* public function getMediosPago()
-     {
-         $this->zendClient->resetParameters();
-         try {
-             $this->zendClient->setUri($this->uriProd . "ec_getmediosdepago");
-             $this->zendClient->setMethod(ZendClient::GET);
-             $this->zendClient->setAuth($this->userProd, $this->passwordProd);
-             $this->zendClient->setHeaders(['Content-Type' => 'application/json']);
-
-             $response = $this->zendClient->request();
-             $response_array = $this->json->unserialize($response->getBody());
-             return [
-                 'state' => 'success',
-                 'result' => $response_array['response']['content']['medios']
-             ];
-         } catch (\Zend_Http_Client_Exception $e) {
-             return [
-                 'state' => 'error',
-                 'code' => $e->getCode(),
-                 'message' => $e->getMessage()
-             ];
-         }
-     }*/
-
     public function importProductsFromPlex()
     {
 
@@ -464,225 +390,6 @@ class OnzePlexApi
         }
     }
 
-    /**
-     * @return array
-     * @throws \Exception
-     * Este metodo se depreca se cambiara por las categorias Plex
-     */
-    /* public function importRubrosFromPlex()
-     {
-         //llamamos a la RestApi del Erp y traemos TODOS los productos.
-         $rubrosApi = $this->getRubrosOnexPlex();
-         $operation = $this->plexoperation->create()
-             ->setName("Obtener Rubros desde OnzePlex")
-             ->setCode("GROP");
-         //si hay resultados de rubros proseguimos
-         if ($rubrosApi['state'] == 'success') {
-             if (!empty($rubrosApi['result'])) {
-                 $op_rubros = [];
-                 //recorro el array de rubros para analizar si ya lo tengo en base
-                 foreach ($rubrosApi['result'] as $op_api_rubro) {
-                     //verifico si no existe ya en la tabla de op
-                     $op_category = $this->plexcategory->create()->load($op_api_rubro['idrubro'], 'id_plex');
-                     if (empty($op_category->toArray())) {
-                         //si no existe lo cargo de vuelta
-                         foreach ($op_api_rubro as $key => $value) {
-                             ($key == 'idrubro') ? $op_category->setIdPlex($value) : null;
-                             ($key == 'rubro') ? $op_category->setName($value) : null;
-                         }
-                         $op_category->setIsObjectNew(true);
-                         $op_category->save();
-                         $op_rubros[] = $op_category;
-                     }
-                 }
-                 $operation
-                     ->setMessage(
-                         "Estado de importacion: Success, Rubros recibidos:" .
-                         count($rubrosApi['result']) . " Nuevos:" . count($op_rubros)
-                     )->setLastId()
-                     ->setIsObjetNew(true)
-                     ->save();
-                 return [
-                     'state' => 'success',
-                     'received' => count($rubrosApi['result']),
-                     'new' => count($op_rubros),
-                     'message' => "Estado de importacion: Success, Rubros recibidos:" .
-                         count($rubrosApi['result']) . " Nuevos:" . count($op_rubros)
-                 ];
-             } else {
-                 $operation
-                     ->setMessage("Estado de importacion: Success, Productos rubros y subrubros recibidos: 0 Nuevos: 0")
-                     ->setIsObjetNew(true)
-                     ->save();
-                 return[
-                     'state' => 'success',
-                     'received' => 0,
-                     'new' => 0,
-                     'message' => "Estado de importacion: Success, Productos rubros: 0 Nuevos: 0"
-                 ];
-             }
-         } else {
-             $operation->setMessage("Estado de importacion: Error, Mensaje de Error:" . $rubrosApi['message']);
-             $operation->setIsObjetNew(true);
-             $operation->save();
-             return [
-                 'state' => 'error',
-                 'received' => 0,
-                 'new' => 0,
-                 'message' => $rubrosApi['message']
-             ];
-         }
-     }*/
-
-    /**
-     * @return array
-     * @throws \Exception
-     * Este metodo se depreca se cambian por categorias de plex
-     */
-    /*public function importSubRubrosFromPlex()
-    {
-        //llamamos a la RestApi del Erp y traemos TODOS los productos.
-        $subrubrosApi = $this->getSubRubrosOnexPlex();
-        $operation = $this->plexoperation->create()
-            ->setName("Obtener Subrubros desde OnzePlex")
-            ->setCode("GSOP");
-        //si hay resultados de rubros proseguimos
-        if ($subrubrosApi['state'] == 'success') {
-            if (!empty($subrubrosApi['result'])) {
-                $op_sub_rubros = [];
-                //recorro el array de rubros para analizar si ya lo tengo en base
-                foreach ($subrubrosApi['result'] as $op_api_sub_rubro) {
-                    //verifico si no existe ya en la tabla de op
-                    //VER ESTO
-                    $op_category = $this->plexcategory->create()->load($op_api_sub_rubro['idsubrubro'], 'id_plex');
-                    if (empty($op_category->toArray())) {
-                        //si no existe lo cargo de vuelta
-                        foreach ($op_api_sub_rubro as $key => $value) {
-                            ($key == 'idsubrubro') ? $op_category->setIdPlex($value) : null;
-                            ($key == 'idrubro') ? $op_category->setIdParent($value) : null;
-                            ($key == 'subrubro') ? $op_category->setName($value) : null;
-                        }
-                        $op_category->setIsChild(true);
-                        $op_category->setIsObjectNew(true);
-                        $op_category->save();
-                        $op_sub_rubros[] = $op_category;
-                    }
-                }
-                $operation
-                    ->setMessage(
-                        "Estado de importacion: Success, Sub Rubros recibidos:" .
-                        count($subrubrosApi['result']) . " Nuevos:" . count($op_sub_rubros)
-                    )->setLastId()
-                    ->setIsObjetNew(true)
-                    ->save();
-                return [
-                    'state' => 'success',
-                    'received' => count($subrubrosApi['result']),
-                    'new' => count($op_sub_rubros),
-                    'message' => "Estado de importacion: Success, Sub Rubros recibidos:" .
-                        count($subrubrosApi['result']) . " Nuevos:" . count($op_sub_rubros)
-                ];
-            } else {
-                $operation
-                    ->setMessage("Estado de importacion: Success, Subrubros recibidos: 0 Nuevos: 0")
-                    ->setIsObjetNew(true)
-                    ->save();
-                return[
-                    'state' => 'success',
-                    'received' => 0,
-                    'new' => 0,
-                    'message' =>  "Estado de importacion: Success, Subrubros recibidos: 0 Nuevos: 0"
-                ];
-            }
-        } else {
-            $operation->setMessage("Estado de importacion: Error, Mensaje de Error:" . $subrubrosApi['message']);
-            $operation->setIsObjetNew(true);
-            $operation->save();
-            return [
-                'state' => 'error',
-                'message' => $subrubrosApi['message']
-            ];
-        }
-    }*/
-
-    /**
-     * @return array
-     * @throws \Exception
-     * Este metodo tiene que deprecarse.. cambiara por las categorias nuevas de Plex
-     */
-    /*    public function importGruposFromPlex()
-        {
-            //llamamos a la RestApi del Erp y traemos TODOS los grupos.
-            $gruposApi = $this->getGruposPlex();
-            $operation = $this->plexoperation->create()
-                ->setName("Obtener Grupos desde OnzePlex")
-                ->setCode("GGOP");
-            //si hay resultados de rubros proseguimos
-            if ($gruposApi['state'] == 'success') {
-                if (!empty($gruposApi['result'])) {
-                    $op_grupos = [];
-                    //recorro el array de rubros para analizar si ya lo tengo en base
-                    foreach ($gruposApi['result'] as $op_api_grupo) {
-                        //verifico si no existe ya en la tabla de op
-                        //VER ESTO
-                        $op_category = $this->plexcategory->create();
-                        $op_category_collection = $this->plexcategory->create()->getCollection();
-                        $op_category_collection
-                            ->addFieldToFilter('is_plex_group', ['eq' => true])
-                            ->addFieldToFilter('id_plex', ['eq' => $op_api_grupo['idgrupo']])
-                            ->load();
-                        $items = $op_category_collection->toArray();
-                        if (empty($items['items'])) {
-                            //si no existe lo cargo de vuelta
-                            foreach ($op_api_grupo as $key => $value) {
-                                ($key == 'idgrupo') ? $op_category->setIdPlex($value) : null;
-                                ($key == 'grupo') ? $op_category->setName($value) : null;
-                            }
-                            $op_category->setIsChild(true);
-                            $op_category->setIsPlexGroup(true);
-                            $op_category->setIsObjectNew(true);
-                            $op_category->save();
-                            $op_grupos[] = $op_category;
-                        }
-                    }
-                    $operation
-                         ->setMessage(
-                             "Estado de importacion: Success, Grupos recibidos:" .
-                             count($gruposApi['result']) . " Nuevos:" . count($op_grupos)
-                         )->setLastId()
-                         ->setIsObjetNew(true)
-                         ->save();
-                    return [
-                        'state' => 'success',
-                        'received' => count($gruposApi['result']),
-                        'new' => count($op_grupos),
-                        'message' => "Estado de importacion: Success, Grupos recibidos:" .
-                            count($gruposApi['result']) . " Nuevos:" . count($op_grupos)
-
-                    ];
-                } else {
-                    $operation
-                        ->setMessage("Estado de importacion: Success, Grupos recibidos: 0 Nuevos: 0")
-                        ->setIsObjetNew(true)
-                        ->save();
-                    return[
-                        'state' => 'success',
-                        'received' => 0,
-                        'new' => 0,
-                        'message' => "Estado de importacion: Success, Grupos recibidos: 0 Nuevos: 0"
-                    ];
-                }
-            } else {
-                $operation->setMessage("Estado de importacion: Error, Mensaje de Error:" . $gruposApi['message']);
-                $operation->setIsObjetNew(true);
-                $operation->save();
-                return [
-                    'state' => 'error',
-                    'message' => $gruposApi['message']
-                ];
-            }
-        }*/
-
     public function convertToMagentoProduct()
     {
         //Busco todos los productos obtenidos en OnexPlex filtrando por los no sincronizados
@@ -749,141 +456,9 @@ class OnzePlexApi
             ];
         }
     }
-
-    /**
-     * @return array
-     * @throws CouldNotSaveException
-     * Este metodo se depreca se cambiara por nuevas categorias de Plex
-     */
-    /*public function convertToMagentoCategory()
-    {
-        //Busco todos las catergorias obtenidos en OnexPlex pero filtrando por los nos sincronizados
-        $new_op_category_collection = $this->plexcategory->create()->getCollection();
-        $new_op_category_collection
-            ->addFieldToFilter('is_synchronized', ['eq' => false])
-            ->load();
-        //verifico que haya categorias importados y procedo sino devuelvo mensaje
-        if (!empty($new_op_category_collection->getColumnValues('id'))) {*/
-    //seteo area de ejecuccion como global front y backend
-    //$this->state->setAreaCode(\Magento\Framework\App\Area::AREA_GLOBAL); lo paso al controlador
-    /** los convierto a Categorias Magento
-     *  recorro los nuevos rubros obtenidos y por cada uno los inserto
-     */
-    /*foreach ($new_op_category_collection as $new_op_category) {
-        $mag_category = $this->categoryFactory->create();
-        $mag_category->setName($new_op_category->getName())
-            ->setIsActive(true);
-        if ($new_op_category->getIsPlexGroup()) {
-            $mag_category->setLevel(4);
-        } elseif ($new_op_category->getIsChild()) {
-            $parent_plex_category = $this->plexcategory->create();
-            $parent_plex_category->load($new_op_category->getIdParent());
-            $mag_category
-                ->setParentId($parent_plex_category->getIdMagento())
-                ->setLevel(3);
-        } else {
-            $mag_category->setLevel(2);
-        }
-        $mag_category = $this->categoryRespository->save($mag_category);
-        $new_op_category->setIsSynchronized(true)
-            ->setIdMagento($mag_category->getId());
-        $new_op_category->save();
-    }
-
-    return [
-        'state' => 'success',
-        'qty' => count($new_op_category_collection),
-        'message' => 'convertion success'
-    ];
-        } else {
-    return [
-        'state' => 'success',
-        'qty' => 0,
-        'message' => 'nothing for convert'
-    ];
-        }
-    }*/
-
-    /**
-     * @return array
-     * @throws \Exception
-     * Depreco porque esta en update product
-     */
-    /*public function updateGrupofromPlex()
-    {
-        $op_products_collection = $this->plexproduct->create()->getCollection()->load();
-        $update_from_plex = $this->getProductsOnexPlex(null, $op_products_collection->getColumnValues('codproduct'));
-        if ($update_from_plex['state'] == 'success') {
-            $op_products_updated = [];
-            if (!empty($update_from_plex['result'])) {
-                //recorro el array de productos para analizar si ya lo tengo en base
-                foreach ($update_from_plex['result'] as $op_api_product_updated) {
-                    $op_product_updated = $this->plexproduct
-                        ->create()
-                        ->load($op_api_product_updated['codproducto'], 'codproduct');
-                    foreach ($op_api_product_updated as $key => $value) {
-                        if ($key == 'grupos') {
-                            foreach ($value as $gr) {
-                                foreach ($gr as $key_gr => $value_gr) {
-                                    ($key_gr == 'idgrupo') ? $op_product_updated->setIdgrupo($value_gr) : null;
-                                    ($key_gr == 'grupo') ? $op_product_updated->setGrupo($value_gr) : null;
-                                }
-                            }
-                        }
-                    }
-                    $op_product_updated->save();
-                    $op_products_updated[] = $op_product_updated;
-                }
-            }
-            return [
-                    'state' => 'success',
-                    'received' => count($update_from_plex['result']),
-                    'updated' => count($op_products_updated)
-                ];
-        } else {
-            return [
-                'state' => 'error',
-                'message' => $update_from_plex['message']
-            ];
-        }
-    }*/
-    /**
-     * @return string[]
-     * se depreca hasta implementar categorias de plex
-     */
-    /*public function addCategoryToProduct()
-    {
-        $count = 0;
-        //Este método agrega o actualiza la categoria a un producto ya sincronizado (convertido).
-        $op_products_collection = $this->plexproduct->create()->getCollection()
-            ->addFieldToFilter('is_synchronized', ['eq' => true])
-            ->addFieldToFilter('idgrupo', ['neq' => 'NULL']);
-        //recorro los productos plex que estan sincronizados, busco el producto magento correspondiente
-        foreach ($op_products_collection as $op_product) {
-            $op_grupo = $this->plexcategory->create()->getCollection()
-                ->addFieldToFilter('id_plex', ['eq',$op_product->getIdgrupo()])
-                ->addFieldToFilter('is_plex_group', ['eq', true])
-                ->getFirstItem();
-            $mag_product = $this->productFactory->create()->load($op_product->getIdMagento());
-            //Si el grupo esta sincronizado como categoria en magento prosigo sino lo ignoro hasta q se importe.
-            if ($op_grupo->getIsSynchronized()) {
-                $mag_category =  $this->categoryFactory->create()->load($op_grupo->getIdMagento());
-                $this->categoryLinkManagement
-                    ->assignProductToCategories($mag_product->getSku(), [$mag_category->getId()]);
-                $count++;
-            }
-        }
-        return
-            [
-                'state' => 'success',
-                'message' => "Products Plex with Group: " . count($op_products_collection) .
-                    " Products with Categories added: " . $count
-            ];
-    }*/
-
     /**
      * Area de Pedidos...
-     * 1- Tomo todos los pedidos completados y los grabo en la tabla intermedia prepareOrderToSync
+     * 1- preparedOrderToSync -- Tomo todos los pedidos completados en estado "pending"  y los grabo en la tabla intermedia prepareOrderToSync
      * 2- Busco en tabla intermerdia sin sincronizar y sincronizo con Plex  (post para crear el pedido e informar el pago)
      *      2.1 Busco todas las ordenes en plexOrder sin estar sincronizadas y traigo desde magento los datos necesarios para sincronizar --> getMagentoOrdersToSync.
      *      2.2 Envio de a una Post al ws de Plex.     *
@@ -945,7 +520,12 @@ class OnzePlexApi
                 ->load();
             $plexOrderToSync_Ids = $plexOrderCollection->getColumnValues('id_magento');
         } else {
-            $plexOrderToSync_Ids = [$order_id];
+            // TODO verificar si la orden ya esta sincronizada
+            $plexOrderCollection = $this->plexorder->create()->getCollection()
+                ->addFieldToFilter('is_synchronized', ['eq' => false])
+                ->addFieldToFilter('id', ['eq' => $order_id])
+                ->load();
+            $plexOrderToSync_Ids = $plexOrderCollection->getColumnValues('id_magento');
         }
         //var_dump($plexOrderToSync_Ids);
         if (!empty($plexOrderToSync_Ids)) {
@@ -968,7 +548,8 @@ class OnzePlexApi
                     if ($product) {
                         $line [] = [
                         'line_amount' => $item->getRowTotalInclTax(),
-                        'line_total_descuento' => $item->getDiscountAmount(),
+                        'line_unit_amount' => $item->getPriceInclTax(),
+                        'line_total_descuento' => 0,//$item->getDiscountAmount(), // TO VIEW SACO EL DTO PORQUE PLEX NO DEJA DESCUENTOS NATIVOS MAGENTO POR LINEA
                         'prod_qty' => $item->getQtyOrdered(),
                         'qty_ordered' => $item->getOrderId(),
                         'product_id' => $product->getId(),
@@ -979,8 +560,12 @@ class OnzePlexApi
                         var_dump($item->getName());
                     }
                 }
-                ($magOrder->getShippingMethod() == 'storepickup_') ? $tipo_entrega = 'R' : $tipo_entrega = 'E';
-                ($magOrder->getShippingMethod() == 'storepickup_') ? $observacion = $magOrder->getShippingDescription() : $observacion = null;
+                ($magOrder->getShippingMethod() == 'storepickup_')
+                    ? $tipo_entrega = 'R'
+                    : $tipo_entrega = 'E';
+                ($magOrder->getShippingMethod() == 'storepickup_')
+                    ? $observacion = $magOrder->getShippingDescription()
+                    : $observacion = null;
                 //TODO ver el id de sucursal
                 $rs_order = [
                     'order_id' => $magOrder->getId(),
@@ -1025,7 +610,7 @@ class OnzePlexApi
             'codproducto' => $linea['product_sku'],
             'producto' => $linea['product_name'],
             'cantidad' => (int)$linea['prod_qty'],
-            'precio' => $linea['line_amount'],
+            'precio' => $linea['line_unit_amount'],
             'idpromo' => "",
             'promo' => "",
             'totaldescuento' => $linea['line_total_descuento'],
@@ -1044,7 +629,7 @@ class OnzePlexApi
             'tipoentrega' => $magOrder['order_tipo_entrega'],
             'tipopago' => $magOrder['order_tipo_pago'],
             'observacion' => $magOrder['order_observacion'],
-            'idsucursal' => "", //sacarklo de observacion
+            'idsucursal' => "2", //TODO se hardcorea a id 2 de acuedo a mail de Galbo
             'external_id' => $magOrder['order_id'],
             'external_sw' => "MAGENTO",
             'costo_envio' => $magOrder['order_costo_envio'],
@@ -1087,7 +672,7 @@ class OnzePlexApi
                 $this->_orderRepository->save($mag_order);
                 return [
                     'state' => 'success',
-                    'plex_id_pedido' => $response_array['response']['content']['idpedido']
+                    'message' => $response_array['response']['content']['idpedido']
                 ];
             } else {
                 return [
@@ -1103,7 +688,13 @@ class OnzePlexApi
             ];
         }
     }
-    public function informPaymentToPlex()
+
+    /**
+     * @param null $magento_order_id
+     * @return array|string[]
+     * @throws \Exception
+     */
+    public function informPaymentToPlex($magento_order_id = null)
     {
         /**
          * Este metodo en esta version solo trabaja con MercadoPago
@@ -1114,14 +705,20 @@ class OnzePlexApi
          *      2.1 verifico si tiene pago realizado
          *      2.1 si lo tiene informo pago a plex y actualizo plex y orden magenot a estado completo.
          */
+
         $mag_orders_collection = $this->orderCollectionFactory->create()
             ->addAttributeToSelect("*")
             ->addFieldToFilter('status', ['eq' => 'sync_plex']);
-        /*->addFieldToFilter('entity_id', ['eq' => '15'])*/
-        /** @var Order $mag_order */
+        $magento_order_id ?
+            $mag_orders_collection->addFieldToFilter('entity_id', ['eq' => $magento_order_id]) :
+            null;
+
         if (!empty($mag_orders_collection)) {
-            $pagos = [];
+            $order_posted = [];
+            $order_not_posted = [];
+            /** @var Order $mag_order */
             foreach ($mag_orders_collection as $mag_order) {
+                $pagos = [];
                 /** Verifico que el pago este realizado por Mercado Pago,
                  * verifico que este aprovado y acreditado asi abanzo
                  */
@@ -1135,10 +732,6 @@ class OnzePlexApi
                     $mag_order->getPayment()
                         ->getAdditionalInformation()['paymentResponse']['status_detail'] == 'accredited'
                 ) {
-                    /* foreach ($mag_order->getAllVisibleItems() as $item) {
-
-                     }*/
-                    $this->zendClient->resetParameters();
                     $plex_order = $this->plexorder->create()->load($mag_order->getId(), 'id_magento');
                     $pagos [] = [
                         'idmediodepago' => $this->plex_mercadopago,
@@ -1165,61 +758,81 @@ class OnzePlexApi
                             'content' => $request
                         ]
                     ];
-                    //return $data;
-                    try {
-                        $this->zendClient->setUri('http://gralpaz.plexonzecenter.com.ar:8081/onzews');
-                        $this->zendClient->setMethod(ZendClient::POST);
-                        $this->zendClient->setAuth($this->userProd, $this->passwordProd);
-                        $this->zendClient->setHeaders(
-                            [
-                                'Content-Type' => 'application/json',
-                            ]
-                        );
-                        $this->zendClient->setRawData(json_encode($data));
-                        $response = $this->zendClient->request();
-                        $response_array = $this->json->unserialize($response->getBody());
-                        //return $request;
-                        if ($response_array['response']['respcode'] == '0') {
+                    //var_dump(json_encode($data));
+                    $rs = $this->postPaymentToOnexPlex($data);
+                    if ($rs['state'] == 'ok') {
+                        if ($rs['rta']['response']['respcode'] == '0') {
                             $plex_order->setIsPaymentInformed(true);
                             $plex_order->save();
                             $mag_order->setStatus('sync_plex_completed')->setState('complete');
                             $this->_orderRepository->save($mag_order);
-                            return [
-                                'state' => 'success',
-                                'msg_plex' => $response_array['response']['respmsg']
+                            $order_posted [] = [
+                            'magento_id' => $mag_order->getId(),
+                            'reason' => $rs['rta']['response']['respmsg']
                             ];
                         } else {
-                            return [
-                                'state' => 'error',
-                                'message' => $response_array['response']['respmsg']
+                            $order_not_posted [] =
+                            [
+                            'magento_id' => $mag_order->getId(),
+                            'reason' => $rs['rta']['response']['respmsg']
                             ];
                         }
-                    } catch (\Zend_Http_Client_Exception $e) {
-                        return [
-                           'state' => 'error',
-                           'code' => $e->getCode(),
-                           'message' => $e->getMessage()
+                    } else {
+                        $order_not_posted [] = [
+                        'magento_id' => $mag_order->getId(),
+                        'reason' => $rs['message']
                         ];
                     }
                 } else {
-                    return [
-                        'status' => 'ok',
-                        'msg' => "Nothing to send to Plex"
+                    $order_not_posted [] = [
+                        'magento_id' => $mag_order->getId(),
+                        'reason' => 'Pago no acreditado o aprobado por Mercadopago'
                     ];
                 }
             }
-        } else {
             return [
                 'status' => 'ok',
+
+                    'q_order_posted_to_plex' => count($order_posted),
+                    'q_order_not_posted_to_plex' => count($order_not_posted),
+                    'order_posted_to_plex' => $order_posted,
+                    'order_not_posted_to_plex' => $order_not_posted
+
+            ];
+        } else {
+            return [
+                'status' => 'fail',
                 'msg' => "Nothing to send to Plex"
             ];
         }
-        return [
-            'status' => 'ok',
-            'msg' => "Nothing to send to Plex"
-        ];
     }
-
+    public function postPaymentToOnexPlex(array $data)
+    {
+        $this->zendClient->resetParameters();
+        try {
+            $this->zendClient->setUri('http://gralpaz.plexonzecenter.com.ar:8081/onzews');
+            $this->zendClient->setMethod(ZendClient::POST);
+            $this->zendClient->setAuth($this->userProd, $this->passwordProd);
+            $this->zendClient->setHeaders(
+                [
+                    'Content-Type' => 'application/json',
+                ]
+            );
+            $this->zendClient->setRawData(json_encode($data));
+            $response = $this->zendClient->request();
+            $response_array = $this->json->unserialize($response->getBody());
+            return [
+                'state' => 'ok',
+                'rta' => $response_array
+            ];
+        } catch (\Zend_Http_Client_Exception $e) {
+            return [
+                'state' => 'error',
+                'code' => $e->getCode(),
+                'message' => $e->getMessage()
+            ];
+        }
+    }
     /**
      * Actualizacion de Stock
      *  1. Get Stock From Plex va a obtener el stock de los productos desde la Api de Plex
@@ -1764,7 +1377,7 @@ class OnzePlexApi
     {
         $products_to_update = $this->plexproduct->create()->getCollection()
            // ->addFieldToFilter('is_synchronized', ['eq' => true])
-;
+        ;
         return [
             //'query' => $products_to_update->getSelectSql(),
             'cantidad' => count($products_to_update->getAllIds())

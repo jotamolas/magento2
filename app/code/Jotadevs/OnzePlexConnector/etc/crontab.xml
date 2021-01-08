@@ -19,5 +19,17 @@
             method="updateProducts">
             <schedule>7 */6 * * *</schedule>
         </job>
+        <job
+            name="jotadevs_op_syncOrdersToPlex"
+            instance="Jotadevs\OnzePlexConnector\Cron\syncOrdersToPlex"
+            method="syncOrdersToPlex">
+            <schedule>*/20 * * * *</schedule>
+        </job>
+        <job
+            name="jotadevs_op_import_attributes_from_plex"
+            instance="Jotadevs\OnzePlexConnector\Cron\ImportAttributesFromPlex"
+            method="importAttributes">
+            <schedule>8 0 * * *</schedule>
+        </job>
     </group>
 </config>

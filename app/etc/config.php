@@ -304,6 +304,7 @@ return [
         'MSP_Common' => 1,
         'MSP_CmsImportExport' => 1,
         'Mageplaza_Core' => 1,
+        'Mageplaza_Smtp' => 1,
         'MercadoPago_Core' => 1,
         'PayPal_Braintree' => 1,
         'PayPal_BraintreeGraphQl' => 1,

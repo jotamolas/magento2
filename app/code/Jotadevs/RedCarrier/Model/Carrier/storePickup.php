@@ -61,8 +61,8 @@ class storePickup extends AbstractCarrier implements
         $shippingPrice = $this->getConfigData('price');
         $result = $this->_rateResultFactory->create();
         $method = $this->_rateMethodFactory->create();
-        $stores = $this->plexApi->getSucursalesPlex();
-        if ($stores['state'] != 'error') {
+       // $stores = $this->plexApi->getSucursalesPlex();
+        /*if ($stores['state'] != 'error') {
             foreach ($stores['result'] as $sucursal) {
                 $store_city = strtolower(preg_replace('/\s+/', '', $sucursal['localidad']));
                 if ($store_city === $dest_city) {
@@ -77,7 +77,7 @@ class storePickup extends AbstractCarrier implements
             }
         } else {
             return false;
-        }
+        }*/
         return $result;
     }
 }
