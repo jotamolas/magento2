@@ -5,7 +5,6 @@ namespace Jotadevs\RedCustoms\Setup;
 use Magento\Catalog\Model\Product;
 use Magento\Customer\Model\Customer;
 use Magento\Eav\Model\Config;
-use Magento\Eav\Setup\EavSetup;
 use Magento\Eav\Setup\EavSetupFactory;
 use Magento\Framework\Setup\InstallDataInterface;
 use Magento\Framework\Setup\ModuleContextInterface;
@@ -69,7 +68,7 @@ class InstallData implements InstallDataInterface
             ['adminhtml_customer','customer_account_edit']
         );
         $dniAttribute->save();
-        $laboratorioAttribute = $this->eavConfig->getAttribute(Product::ENTITY,'laboratorio');
+        $laboratorioAttribute = $this->eavConfig->getAttribute(Product::ENTITY, 'laboratorio');
         $laboratorioAttribute->save();
     }
 }

@@ -19,16 +19,71 @@ class storePickup extends AbstractCarrier implements
     protected $_isFixed = true;
     protected $_rateResultFactory;
     protected $_rateMethodFactory;
-    protected $ciudades = ['posadas',
-        'cordoba',
-        'córdoba',
-        'cba',
-        'capital',
-        'cordobacapital',
-        'córdobacapital',
-        'resistencia'];
+    protected $ciudades = ['posadas','cordoba','córdoba','cba','cordobacapital','córdobacapital', 'resistencia'];
     protected $plexApi;
+    protected $stores = [
+        [
+            'name' => 'Red - Nuevocentro',
+            'address' => 'Duarte Quiros 1400',
+            'postalcode' => '5000',
+            'city' => ['cordoba','córdoba','cba','cordobacapital','córdobacapital']
+        ],
+        [
+            'name' => 'Red - Urca',
+            'address' => 'Emilio Lamarca 4136',
+            'postalcode' => '5000',
+            'city' => ['cordoba','córdoba','cba','cordobacapital','córdobacapital']
+        ],
+        [
+            'name' => 'Red - Urbana',
+            'address' => 'Av. Pedro Laplace 5890',
+            'postalcode' => '5000',
+            'city' => ['cordoba','córdoba','cba','cordobacapital','córdobacapital']
+        ],
+        [
+            'name' => 'Red - Colon',
+            'address' => 'Av. Colon 5034. Local 8',
+            'postalcode' => '5000',
+            'city' => ['cordoba','córdoba','cba','cordobacapital','córdobacapital']
+        ],
+        [
+            'name' => 'Red - Cerro',
+            'address' => 'Rafael Nunez 3686.',
+            'postalcode' => '5000',
+            'city' => ['cordoba','córdoba','cba','cordobacapital','córdobacapital']
+        ],
+        [
+            'name' => 'Red - Villa Belgrano',
+            'address' => 'Av. Recta Martinolli 6137',
+            'postalcode' => '5000',
+            'city' => ['cordoba','córdoba','cba','cordobacapital','córdobacapital']
+        ],
+        [
+            'name' => 'Red - Martinolli',
+            'address' => 'Av. Recta Martinolli 8853',
+            'postalcode' => '5000',
+            'city' => ['cordoba','córdoba','cba','cordobacapital','córdobacapital']
+        ],
+        [
+            'name' => 'Red - Resistencia',
+            'address' => 'Santa Fe 124.',
+            'postalcode' => '3500',
+            'city' => ['resistencia']
+        ],
+        [
+            'name' => 'Red - Posadas',
+            'address' => 'San Martin 2275',
+            'postalcode' => '3300',
+            'city' => ['posadas']
+        ],
+        [
+            'name' => 'Red - Posadas II',
+            'address' => 'Felix Azara y Entre Rios',
+            'postalcode' => '3300',
+            'city' => ['posadas']
+        ],
 
+    ];
     public function __construct(
         ScopeConfigInterface $scopeConfig,
         ErrorFactory $rateErrorFactory,
@@ -60,24 +115,20 @@ class storePickup extends AbstractCarrier implements
         }
         $shippingPrice = $this->getConfigData('price');
         $result = $this->_rateResultFactory->create();
-        $method = $this->_rateMethodFactory->create();
-       // $stores = $this->plexApi->getSucursalesPlex();
-        /*if ($stores['state'] != 'error') {
-            foreach ($stores['result'] as $sucursal) {
-                $store_city = strtolower(preg_replace('/\s+/', '', $sucursal['localidad']));
-                if ($store_city === $dest_city) {
-                    $method->setCarrier('storepickup');
-                    $method->setCarrierTitle('Retiro en Sucursal ' . $sucursal['nombre'] . ' : ' . $sucursal['domicilio'] . ' Telefono: ' . $sucursal['telefono']);
-                    $method->setMethod('storepickup');
-                    $method->setMethodTitle('Retiro en Sucursal ' . $sucursal['nombre'] . ' : ' . $sucursal['domicilio'] . ' Telefono: ' . $sucursal['telefono']);
-                    $method->setPrice($shippingPrice);
-                    $method->setCost($shippingPrice);
-                    $result->append($method);
-                }
+
+        foreach ($this->stores as $sucursal) {
+            //$store_city = strtolower(preg_replace('/\s+/', '', $sucursal['city']));
+            if (in_array($dest_city, $sucursal['city'])) {
+                $method = $this->_rateMethodFactory->create();
+                $method->setCarrier('storepickup ');
+                $method->setMethod('storepickup');
+                $method->setCarrierTitle('Retiro en Sucursal ' . $sucursal['name'] . ' : ' . $sucursal['address'] . ' .');
+                $method->setMethodTitle('Retiro en Sucursal ' . $sucursal['name'] . ' : ' . $sucursal['address'] . ' .');
+                $method->setPrice($shippingPrice);
+                $method->setCost($shippingPrice);
+                $result->append($method);
             }
-        } else {
-            return false;
-        }*/
+        }
         return $result;
     }
 }

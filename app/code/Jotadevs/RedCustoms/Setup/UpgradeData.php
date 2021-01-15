@@ -62,6 +62,7 @@ class UpgradeData implements UpgradeDataInterface
         if (version_compare($context->getVersion(), '1.0.5') < 0) {
             $this->upgradeProductSchema202($setup);
         }
+
         $setup->endSetup();
     }
 
@@ -143,7 +144,7 @@ class UpgradeData implements UpgradeDataInterface
             'visible_in_advanced_search' => true,
             'visible' => true
         ]);
-        $attribute = $this->eavConfig->getAttribute(Customer::ENTITY, 'subrubro_plex');
+        $attribute = $this->eavConfig->getAttribute(Product::ENTITY, 'rubro_plex');
         $attribute->setData('attribute_set_id', $attributeSetId);
         $attribute->setData('attribute_group_id', $attributeGroupId);
         $this->attributeResource->save($attribute);
@@ -163,7 +164,7 @@ class UpgradeData implements UpgradeDataInterface
             'visible_in_advanced_search' => true,
             'visible' => true
         ]);
-        $attribute = $this->eavConfig->getAttribute(Customer::ENTITY, 'subrubro_plex');
+        $attribute = $this->eavConfig->getAttribute(Product::ENTITY, 'subrubro_plex');
         $attribute->setData('attribute_set_id', $attributeSetId);
         $attribute->setData('attribute_group_id', $attributeGroupId);
         $this->attributeResource->save($attribute);
@@ -183,7 +184,7 @@ class UpgradeData implements UpgradeDataInterface
             'visible_in_advanced_search' => true,
             'visible' => true
         ]);
-        $attribute = $this->eavConfig->getAttribute(Customer::ENTITY, 'grupo_plex');
+        $attribute = $this->eavConfig->getAttribute(Product::ENTITY, 'grupo_plex');
         $attribute->setData('attribute_set_id', $attributeSetId);
         $attribute->setData('attribute_group_id', $attributeGroupId);
         $this->attributeResource->save($attribute);
@@ -203,9 +204,10 @@ class UpgradeData implements UpgradeDataInterface
             'visible_in_advanced_search' => true,
             'visible' => true
         ]);
-        $attribute = $this->eavConfig->getAttribute(Customer::ENTITY, 'observaciones');
+        $attribute = $this->eavConfig->getAttribute(Product::ENTITY, 'observaciones_plex');
         $attribute->setData('attribute_set_id', $attributeSetId);
         $attribute->setData('attribute_group_id', $attributeGroupId);
         $this->attributeResource->save($attribute);
     }
+
 }
