@@ -23,10 +23,6 @@ class CheckStockFromPlex implements ObserverInterface
      * @var \Magento\CatalogInventory\Api\StockRegistryInterface
      */
     protected $stockRegistry;
-    /**
-     * @var \Magento\CatalogInventory\Model\Stock\StockItemRepository
-     */
-    protected $stockItem;
 
     /**
      * CheckStockFromPlex constructor.
@@ -46,8 +42,7 @@ class CheckStockFromPlex implements ObserverInterface
         PlexProductFactory $plexProduct,
         PlexProduct $resourceProduct,
         ManagerInterface $messageManager,
-        \Magento\CatalogInventory\Api\StockRegistryInterface $stockRegistry,
-        StockItemRepository $stockItem
+        \Magento\CatalogInventory\Api\StockRegistryInterface $stockRegistry
     ) {
         $this->logger = $logger;
         $this->_stockItemRepository = $stockItemRepository;
@@ -56,7 +51,6 @@ class CheckStockFromPlex implements ObserverInterface
         $this->messageManager = $messageManager;
         $this->resourceProduct = $resourceProduct;
         $this->stockRegistry = $stockRegistry;
-        $this->stockItem = $stockItem;
     }
 
     /**
@@ -73,8 +67,7 @@ class CheckStockFromPlex implements ObserverInterface
 
         $stockItem = $this->stockRegistry->getStockItem($product->getId(), $product->getStore()->getWebsiteId());
         $minQty = $stockItem->getMinSaleQty();
-        $stockQty = $this->stockItem->get($product->getId())->getQty();
-
+        $stockQty = $stockItem->getQty();
         if ($info instanceof \Magento\Framework\DataObject) {
             $request = $info;
         /// $this->logger->debug(" Es una instancia de Data Object");
