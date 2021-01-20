@@ -20,15 +20,6 @@
                 <title>Envio Gran Cordoba Red</title>
                 <specificerrmsg>This shipping method is not available. To use this shipping method, please contact us.</specificerrmsg>
             </redgcba>
-            <storepickup>
-                <active>1</active>
-                <sallowspecific>0</sallowspecific>
-                <model>Jotadevs\RedCarrier\Model\Carrier\storePickup</model>
-                <title></title>
-                <name>Retiro en Sucursal</name>
-                <price>0</price>
-                <specificerrmsg>This shipping method is not available. To use this shipping method, please contact us.</specificerrmsg>
-            </storepickup>
         </carriers>
     </default>
 </config>

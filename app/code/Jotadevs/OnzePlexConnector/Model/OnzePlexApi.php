@@ -560,13 +560,14 @@ class OnzePlexApi
                         var_dump($item->getName());
                     }
                 }
-                ($magOrder->getShippingMethod() == 'storepickup_')
+                ($magOrder->getShippingMethod() == 'instore_pickup')
                     ? $tipo_entrega = 'R'
                     : $tipo_entrega = 'E';
-                ($magOrder->getShippingMethod() == 'storepickup_')
+                ($magOrder->getShippingMethod() == 'instore_pickup')
                     ? $observacion = $magOrder->getShippingDescription()
                     : $observacion = null;
                 //TODO ver el id de sucursal
+                //var_dump($magOrder->getShippingMethod());
                 $rs_order = [
                     'order_id' => $magOrder->getId(),
                     'order_cliente_nombre' => $magOrder->getCustomerName(),
@@ -852,6 +853,7 @@ class OnzePlexApi
             }
         }
         $parameters = array_merge($parameters, ['idproducto' => $idstring, 'idsucursal' => 2]);
+        //harcordeada la surcursal 2 segun Galbo
         try {
             $this->zendClient->setUri($this->uriProd . "ec_getstock");
             $this->zendClient->setMethod(ZendClient::GET);
@@ -921,7 +923,9 @@ class OnzePlexApi
         $sourceItems = [];
         foreach ($productos as $producto) {
             $sourceItem = $this->sourceItemFactory->create();
-            $sourceItem->setSourceCode('default');
+            //TODO se usa red_cba_cerro lear
+            //ccambiar el source code
+            $sourceItem->setSourceCode('red_cba_cerro');
             $sourceItem->setSku($producto['codproducto']);
             if ($producto['cantidad'] > 0) {
                 $sourceItem->setQuantity($producto['cantidad']);

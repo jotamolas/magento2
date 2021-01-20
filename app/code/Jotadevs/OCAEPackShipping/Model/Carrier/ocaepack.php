@@ -14,7 +14,7 @@ class ocaepack extends AbstractCarrier implements
     protected $_rateResultFactory;
     protected $_rateMethodFactory;
     protected $ocaApi;
-    protected $provincias_code = ['CABA', 'BA'];
+    protected $provincias_code = [];//['CABA', 'BA'];
     protected $ciudades = ['posadas', 'cordoba', 'córdoba', 'cba', 'capital', 'cordobacapital', 'córdobacapital'];
     protected $invalid_postalcode = [5151,5149,5105,5109,5111];
 

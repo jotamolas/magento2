@@ -55,7 +55,7 @@ class TestExternalApi extends Command
         //$response = $this->externalApi->updateProductsFromPlex();
         //$oder_mag = $this->order_repository_magento->get(5);
         //$response_prepared = $this->externalApi->prepareOrderToSync();
-        /*$response_order_to_sync = $this->externalApi->getMagentoOrdersToSync();
+       /* $response_order_to_sync = $this->externalApi->getMagentoOrdersToSync(12);
         if ($response_order_to_sync['status'] == 'ok' and $response_order_to_sync['qty_to_sync'] > 0) {
             foreach ($response_order_to_sync['orders_to_sync'] as $order) {
                 var_dump($this->externalApi->postOrderToPlex($order));
