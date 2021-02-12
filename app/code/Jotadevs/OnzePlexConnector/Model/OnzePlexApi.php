@@ -128,6 +128,7 @@ class OnzePlexApi
     public function getProductsOnexPlex(\DateTime $fechadecambio = null, array $ids = null)
     {
         $parameters = [];
+        //$parameters = array_merge($parameters, ['idsucursal' => 2]); //sucursal Cerro
         $fechadecambio ?
             $parameters = array_merge($parameters, ['fechacambio' => $fechadecambio->format('Ymd')])
             :
@@ -136,6 +137,11 @@ class OnzePlexApi
         //var_dump($parameters);
         $this->zendClient->resetParameters();
         try {
+            $this->zendClient->setConfig(
+                [
+                    'timeout' => 200
+                ]
+            );
             $this->zendClient->setUri($this->uriProd . "ec_getproductos");
             $this->zendClient->setMethod(ZendClient::GET);
             $this->zendClient->setAuth($this->userProd, $this->passwordProd);
@@ -146,7 +152,10 @@ class OnzePlexApi
                 ]
             );
             $response = $this->zendClient->request();
+            //var_dump($parameters);
+            //var_dump($response);
             $response_array = $this->json->unserialize($response->getBody());
+            //var_dump($response_array);
             return [
                 'state' => 'success',
                 'result' => $response_array['response']['content']['productos']
@@ -263,7 +272,7 @@ class OnzePlexApi
                 )
             ) :
             $result = $this->getProductsOnexPlex();
-
+        //var_dump($result);
         //si hay resultados proseguimos
         if ($result['state'] == 'success') {
             if (!empty($result['result'])) {
@@ -855,6 +864,11 @@ class OnzePlexApi
         $parameters = array_merge($parameters, ['idproducto' => $idstring, 'idsucursal' => 2]);
         //harcordeada la surcursal 2 segun Galbo
         try {
+            $this->zendClient->setConfig(
+                [
+                    'timeout' => 200
+                ]
+            );
             $this->zendClient->setUri($this->uriProd . "ec_getstock");
             $this->zendClient->setMethod(ZendClient::GET);
             $this->zendClient->setAuth($this->userProd, $this->passwordProd);

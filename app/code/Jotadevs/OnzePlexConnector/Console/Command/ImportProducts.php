@@ -43,6 +43,6 @@ class ImportProducts extends Command
         } else {
             $output->writeln('Error: ' . $response['message']);
         }
-        // var_dump($response);
+        //var_dump($response);
     }
 }

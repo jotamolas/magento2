@@ -284,10 +284,9 @@ return [
         'Magento_Wishlist' => 1,
         'Magento_WishlistAnalytics' => 1,
         'Magento_WishlistGraphQl' => 1,
-        'Amazon_Core' => 1,
-        'Amazon_Login' => 1,
-        'Amazon_Payment' => 1,
-        'Barbanet_ArgentinaRegions' => 1,
+        'Amazon_Core' => 0,
+        'Amazon_Login' => 0,
+        'Amazon_Payment' => 0,
         'Dotdigitalgroup_Email' => 1,
         'Dotdigitalgroup_Chat' => 1,
         'Hidden_Apparel' => 1,
@@ -306,11 +305,12 @@ return [
         'Mageplaza_Core' => 1,
         'Mageplaza_Smtp' => 1,
         'MercadoPago_Core' => 1,
-        'PayPal_Braintree' => 1,
+        'Mugar_ArgentinaRegions' => 1,
+        'PayPal_Braintree' => 0,
         'PayPal_BraintreeGraphQl' => 1,
         'Temando_ShippingRemover' => 1,
-        'Vertex_Tax' => 1,
-        'Vertex_AddressValidation' => 1,
-        'Yotpo_Yotpo' => 1
+        'Vertex_Tax' => 0,
+        'Vertex_AddressValidation' => 0,
+        'Yotpo_Yotpo' => 0
     ]
 ];
