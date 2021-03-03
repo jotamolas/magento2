@@ -291,6 +291,7 @@ return [
         'Dotdigitalgroup_Chat' => 1,
         'Hidden_Apparel' => 1,
         'Hidden_Base' => 1,
+        'Jotadevs_BotonArrepentimiento' => 1,
         'Jotadevs_LancioniCarrier' => 1,
         'Jotadevs_OCAEPackShipping' => 1,
         'Jotadevs_OnzePlexConnector' => 1,

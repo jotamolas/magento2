@@ -938,7 +938,7 @@ class OnzePlexApi
         foreach ($productos as $producto) {
             $sourceItem = $this->sourceItemFactory->create();
             //TODO se usa red_cba_cerro lear
-            //ccambiar el source code
+
             $sourceItem->setSourceCode('red_cba_cerro');
             $sourceItem->setSku($producto['codproducto']);
             if ($producto['cantidad'] > 0) {

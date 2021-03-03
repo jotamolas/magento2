@@ -1,0 +1,18 @@
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+    <table name="jotadevs_arrepentimiento" resource="default" engine="innodb"
+        comment="Registros de Arrepentimientos de clientes">
+        <column name="id" xsi:type="int" padding="12" nullable="false" identity="true" unsigned="false"/>
+        <column name="nombre" xsi:type="varchar" length="15" nullable="false"  />
+        <column name="apellido" xsi:type="varchar" length="15" nullable="false"  />
+        <column name="email" xsi:type="varchar" length="15" nullable="false"  />
+        <column name="motivo" xsi:type="text"  nullable="false"  />
+        <column name="ciudad" xsi:type="varchar" length="15" nullable="false"  />
+        <column name="provincia" xsi:type="varchar" length="15" nullable="false"  />
+        <column name="fecha" xsi:type="date"  nullable="false"  />
+        <column name="dni" xsi:type="varchar" length="8" nullable="false" />
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="id"/>
+        </constraint>
+    </table>
+</schema>

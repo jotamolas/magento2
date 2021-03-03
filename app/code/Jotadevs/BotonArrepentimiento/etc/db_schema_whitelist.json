@@ -1,0 +1,18 @@
+{
+    "jotadevs_arrepentimiento": {
+        "column": {
+            "id": true,
+            "nombre": true,
+            "apellido": true,
+            "email": true,
+            "motivo": true,
+            "ciudad": true,
+            "provincia": true,
+            "fecha": true,
+            "dni": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    }
+}
