@@ -9,7 +9,29 @@
             "ciudad": true,
             "provincia": true,
             "fecha": true,
-            "dni": true
+            "dni": true,
+            "identificador_compra": true,
+            "estado": true,
+            "observaciones": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "jotadevs_arrepentimiento_caso": {
+        "column": {
+            "id": true,
+            "nombre": true,
+            "apellido": true,
+            "email": true,
+            "motivo": true,
+            "ciudad": true,
+            "provincia": true,
+            "fecha": true,
+            "dni": true,
+            "identificador_compra": true,
+            "estado": true,
+            "observaciones": true
         },
         "constraint": {
             "PRIMARY": true

@@ -5,6 +5,8 @@
         <sequence>
             <module name="Magento_Store"/>
             <module name="Magento_Cms"/>
+            <module name="Jotadevs_RedCustoms"/>
+            <module name="Jotadevs_OnzePlexConnector"/>
         </sequence>
     </module>
 </config>

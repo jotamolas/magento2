@@ -1,0 +1,170 @@
+<?php
+/** @var \Magento\Framework\Escaper $escaper */
+/** @var  \Jotadevs\BotonArrepentimiento\Block\Carga\Index $block */
+?>
+
+<div id="main-content-area">
+
+    <form
+        class="form create"
+        id="form-validate"
+        action="<?php echo $block->getUrl('caso/carga/guardar') ?>"
+        method="post">
+        <?php echo $block->getBlockHtml('formkey') ?>
+        <fieldset class="fieldset create info">
+            <legend class="legend"><span><?= $escaper->escapeHtml(__('Personal Information')) ?></span></legend><br>
+            <div class="field nombre required">
+                <label class="label" for="nombre">
+                    <span><?php echo __('Nombre') ?></span>
+                </label>
+                <div class="control">
+                    <input
+                        id="nombre"
+                        type="text"
+                        name="nombre"
+                        data-validate="{required:true}"
+                        value=""
+                    />
+                </div>
+        </div>
+            <div class="field apellido required">
+                <label class="label" for="apellido">
+                    <span><?php echo __('Apellido') ?></span>
+                </label>
+                <div class="control">
+                    <input
+                        id="apellido"
+                        type="text"
+                        name="apellido"
+                        data-validate="{required:true}"
+                        value=""
+                    />
+                </div>
+            </div>
+            <div class="field email required">
+                <label class="label" for="email">
+                    <span><?php echo __('E-Mail') ?></span>
+                </label>
+                <div class="control">
+                    <input
+                        id="email"
+                        type="email"
+                        name="email"
+                        data-validate="{required:true}"
+                        value=""
+                    />
+                </div>
+            </div>
+            <div class="field dni required">
+                <label class="label" for="dni">
+                    <span><?php echo __('Documento Nacional de Identidad') ?></span>
+                </label>
+                <div class="control">
+                    <input
+                        id="dni"
+                        type="number"
+                        name="dni"
+                        data-validate="{required:true}"
+                        value=""
+                    />
+                </div>
+            </div>
+            <div class="field provincia required">
+                <label class="label" for="provincia">
+                    <span><?php echo __('Provincia') ?></span>
+                </label>
+                <div class="control">
+                    <select
+                        id="provincia"
+                        name="provincia"
+                        data-validate="{required:true}"
+                    >
+                        <?php echo $block->getProvincias(); ?>
+                    </select>
+                </div>
+            </div>
+            <div class="field ciudad required">
+                <label class="label" for="ciudad">
+                    <span><?php echo __('Ciudad') ?></span>
+                </label>
+                <div class="control">
+                    <input
+                        type="text"
+                        id="ciudad"
+                        name="ciudad"
+                        data-validate="{required:true}"
+                    >
+                </div>
+            </div>
+        </fieldset>
+        <fieldset class="fieldset address ">
+            <legend class="legend"><span><?= $escaper->escapeHtml(__('Informacion de la Compra')) ?></span></legend><br>
+            <div class="field fecha">
+                <label for="fecha" class="label">
+                    <span><?php echo __('Fecha de Compra') ?></span>
+                </label>
+                <div class="control">
+                    <input
+                        type="text"
+                        class="input-text"
+                        id="fecha-datepicker"
+                        name="fecha"
+                    />
+                </div>
+            </div>
+            <div class="field identificadorCompra required">
+                <label class="label" for="identificadorCompra">
+                    <span><?php echo __('Numero de Compra') ?></span>
+                </label>
+                <div class="control">
+                    <input
+                        id="identificadorCompra"
+                        type="text"
+                        name="identificadorCompra"
+                        data-validate="{required:true}"
+                        value=""
+                    />
+                </div>
+            </div>
+            <div class="field motivo required">
+                <label class="label" for="motivo">
+                    <span><?php echo __('Motivo del Arrepentimiento') ?></span>
+                </label>
+                <div class="control">
+                <textarea
+                    form="form-validate"
+                    name="motivo"
+                    data-validate="{required:true}"
+                    value=""
+                ></textarea>
+                </div>
+            </div>
+        </fieldset>
+        <button
+            type="submit"
+            class="action save primary">
+            <span> <?php echo __('Enviar') ?></span>
+        </button>
+    </form>
+</div>
+<script>
+    require([
+        'jquery',
+        'mage/mage'
+    ], function ($) {
+        var dataForm = $('#form-validate');
+        dataForm.mage('validation',{});
+    });
+</script>
+<script>
+    require([
+        "jquery",
+        "mage/calendar"
+    ], function ($) {
+        $('#fecha-datepicker').calendar({
+            buttonText: "<?php echo __('Ingresa la Fecha de Compra')?>",
+            dateFormat: "dd/mm/Y"
+        });
+
+    })
+</script>

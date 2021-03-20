@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<config
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+
+    <default>
+        <customer>
+            <captcha>
+                <shown_to_logged_in_user>
+                    <jotadevs_arrepentimiento_form>1</jotadevs_arrepentimiento_form>
+                </shown_to_logged_in_user>
+                <always_for>
+                    <jotadevs_arrepentimiento_form>1</jotadevs_arrepentimiento_form>
+                </always_for>
+            </captcha>
+        </customer>
+        <captcha translate="label">
+            <frontend>
+                <areas>
+                    <jotadevs_arrepentimiento_form>
+                        <label>Jotadevs Arrepentimiento Form</label>
+                    </jotadevs_arrepentimiento_form>
+                </areas>
+            </frontend>
+        </captcha>
+    </default>
+</config>

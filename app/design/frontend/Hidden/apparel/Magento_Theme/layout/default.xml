@@ -21,10 +21,16 @@
             </block>
         </referenceContainer>
         <referenceBlock name="header.links">
-            <block class="Magento\Framework\View\Element\Html\Link" name="header-new-link">
+            <block class="Magento\Framework\View\Element\Html\Link" name="header-sucursales-link">
                 <arguments>
                     <argument name="label" xsi:type="string" translate="true">Sucursales</argument>
                     <argument name="path" xsi:type="string" translate="true">sucursales</argument>
+                </arguments>
+            </block>
+            <block  class="Magento\Framework\View\Element\Html\Link" name="header-arrepentimiento-link">
+                <arguments>
+                    <argument name="label" xsi:type="string" translate="true">Arrepentimiento de Compra</argument>
+                    <argument name="path" xsi:type="string" translate="true">caso/carga/index</argument>
                 </arguments>
             </block>
         </referenceBlock>
