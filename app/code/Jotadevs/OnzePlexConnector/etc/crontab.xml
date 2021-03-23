@@ -23,7 +23,7 @@
             name="jotadevs_op_syncOrdersToPlex"
             instance="Jotadevs\OnzePlexConnector\Cron\syncOrdersToPlex"
             method="syncOrdersToPlex">
-            <schedule>*/20 * * * *</schedule>
+            <schedule>*/1 * * * *</schedule>
         </job>
         <job
             name="jotadevs_op_import_attributes_from_plex"
