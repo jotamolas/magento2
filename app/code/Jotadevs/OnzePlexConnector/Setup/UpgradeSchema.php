@@ -450,6 +450,28 @@ class UpgradeSchema implements \Magento\Framework\Setup\UpgradeSchemaInterface
                 ]
             );
         }
+        if (version_compare($context->getVersion(), '1.1.6', '<')) {
+            $setup->getConnection()->addColumn(
+                $setup->getTable('jotadevs_op_product'),
+                'codebar',
+                [
+                    'type' => Table::TYPE_TEXT,
+                    'nullable' => true,
+                    'comment' => 'Codigo EAN principal del Producto en Onze Plex'
+
+                ]
+            );
+            $setup->getConnection()->addColumn(
+                $setup->getTable('jotadevs_op_product'),
+                'codesbar',
+                [
+                    'type' => Table::TYPE_TEXT,
+                    'nullable' => true,
+                    'comment' => 'Codigos EAN secundarios del Producto en Onze Plex'
+
+                ]
+            );
+        }
         $setup->endSetup();
     }
 

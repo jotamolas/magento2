@@ -6,6 +6,7 @@ use Jotadevs\BotonArrepentimiento\Controller\Boton;
 use Jotadevs\BotonArrepentimiento\Model\CasoFactory;
 use Magento\Framework\App\Action\Context;
 use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\Controller\ResultFactory;
 use Magento\Framework\Data\Form\FormKey\Validator;
 use Magento\Framework\Mail\Template\TransportBuilder;
 use Magento\Framework\Stdlib\DateTime;
@@ -25,6 +26,10 @@ class Guardar extends Boton
     protected $formKeyValidator;
     protected $dateTime;
     /**
+     * @var DateTime\Filter\Date
+     */
+    protected $_dateFilter;
+    /**
      * @var CasoFactory
      */
     protected $casoFactory;
@@ -37,7 +42,8 @@ class Guardar extends Boton
         StoreManagerInterface $storeManager,
         Validator $formKeyValidator,
         DateTime $dateTime,
-        CasoFactory $casoFactory
+        CasoFactory $casoFactory,
+        DateTime\Filter\Date $dateFilter
     ) {
         $this->transportBuilder = $transportBuilder;
         $this->inlineTranslation = $inlineTranslation;
@@ -47,6 +53,7 @@ class Guardar extends Boton
         $this->dateTime = $dateTime;
         $this->messageManager = $context->getMessageManager();
         $this->casoFactory = $casoFactory;
+        $this->_dateFilter = $dateFilter;
         parent::__construct($context);
     }
     public function execute()
@@ -55,26 +62,25 @@ class Guardar extends Boton
         $secret = "6Lf7uIoaAAAAAFA9XTv30a44TQ-JRZ2-aJ0XkHLz";
         $response = null;
         $path = self::$_siteVerifyUrl;
-        $dataC = array(
+        $dataC = [
             'secret' => $secret,
             'remoteip' => $_SERVER["REMOTE_ADDR"],
             'v' => self::$_version,
             'response' => $captcha
-        );
+        ];
         $req = "";
-        foreach ($dataC as $key => $value){
+        foreach ($dataC as $key => $value) {
             $req .= $key . '=' . urlencode(stripslashes($value)) . '&';
         }
-        $req = substr($req,0,strlen($req)-1);
+        $req = substr($req, 0, strlen($req) - 1);
         $response = file_get_contents($path . $req);
-        $answer = json_decode($response,true);
-
-        if(trim($answer['success']) == true){
-            $resultRedirect = $this->resultRedirectFactory->create();
+        $answer = json_decode($response, true);
+        $resultRedirect = $this->resultRedirectFactory->create();
+        if (trim($answer['success']) == true) {
             if (
-            !$this->formKeyValidator->validate(
-                $this->getRequest()
-            )
+                !$this->formKeyValidator->validate(
+                    $this->getRequest()
+                )
             ) {
                 return $resultRedirect->setRefererUrl();
             }
@@ -102,13 +108,13 @@ class Guardar extends Boton
                     ->setIdentificadorCompra($identificadorCompra);
                 $caso->save();
             } catch (Exception $e) {
-                $this->messageManager->addError(__('Error occurred during ticket creation.'));
+                $this->messageManager->addError(__('Ocurrio un error guardando su Caso.'));
+                return $resultRedirect->setRefererUrl();
             }
+            return $this->_redirect('caso/carga/success', ['_query' => ['id' => $caso->getId()]]);
+        } else {
+            $this->messageManager->addErrorMessage("Error en el captcha");
             return $resultRedirect->setRefererUrl();
-        }else{
-            return $this->messageManager->addErrorMessage("Error en el captcha");
         }
-
-
     }
 }

@@ -145,6 +145,7 @@
             class="action save primary">
             <span> <?php echo __('Enviar') ?></span>
         </button>
+        <br><br>
         <div class="row">
             <div class="g-recaptcha" data-sitekey="6Lf7uIoaAAAAALrFYFuSBU40PRTohIdoNP5CQqdA"></div>
         </div>
@@ -167,7 +168,7 @@
     ], function ($) {
         $('#fecha-datepicker').calendar({
             buttonText: "<?php echo __('Ingresa la Fecha de Compra')?>",
-            dateFormat: "dd/mm/Y"
+            dateFormat: "yyyy-mm-dd"
         });
 
     })

@@ -1,0 +1,22 @@
+<?php
+
+use Jotadevs\BotonArrepentimiento\Block\Carga\Success;
+
+/** @var  Success $block */
+$data = $block->getCasoData();
+//var_dump($data);
+?>
+<?php if ($data['status'] == 'success') { ?>
+<div class="row">
+    <h2>Caso Registrado </h2>
+    <p>Estimado/a <strong> <?php echo $data['cliente'] ?> </strong> su Arrepentimiento de la Compra Nro. <strong> <?php echo $data['id_compra'] ?></strong> ha sido registrado.<br>
+        Nuestros asesores analizaran el caso y se comunicaran con usted. Por favor conserve el numero gestion: <strong> Caso Nro. <?php echo $data['id'] ?> </strong>
+    </p>
+
+</div>
+<?php } else { ?>
+ <div class="row">
+     <h1>No existe el numero de caso solicitado</h1>
+ </div>
+
+<?php } ?>

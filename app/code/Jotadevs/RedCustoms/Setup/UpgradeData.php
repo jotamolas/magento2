@@ -26,7 +26,9 @@ class UpgradeData implements UpgradeDataInterface
      */
 
     private $eavConfig;
+
     private $attributeResource;
+
     /** @var Status Magento\Sales\Model\Order\Status */
     private $orderStatus;
 
@@ -62,6 +64,10 @@ class UpgradeData implements UpgradeDataInterface
         if (version_compare($context->getVersion(), '1.0.5') < 0) {
             $this->upgradeProductSchema202($setup);
         }
+
+       /* if (version_compare($context->getVersion(), '1.0.6') < 0) {
+            $this->upgradeProductSchema203($setup);
+        }*/
 
         $setup->endSetup();
     }
@@ -210,4 +216,50 @@ class UpgradeData implements UpgradeDataInterface
         $this->attributeResource->save($attribute);
     }
 
+   /* private function upgradeProductSchema203(ModuleDataSetupInterface $setup)
+    {
+        $eavSetup = $this->eavSetupFactory->create(['setup' => $setup]);
+        $attributeSetId = $eavSetup->getDefaultAttributeSetId(Product::ENTITY);
+        $attributeGroupId = $eavSetup->getDefaultAttributeGroupId(Product::ENTITY);
+
+        $eavSetup->addAttribute(Product::ENTITY, 'plex_codebar', [
+            'type' => 'text',
+            'label' => 'Codigo Barra Plex',
+            'input' => 'text',
+            'global' => \Magento\Eav\Model\Entity\Attribute\ScopedAttributeInterface::SCOPE_GLOBAL,
+            'required' => false,
+            'is_filterable_in_grid' => true,
+            'is_used_in_grid' => true,
+            'is_visible_in_grid' => true,
+            'searchable' => true,
+            'system' => true,
+            'use_for_promo_rules' => true,
+            'visible_in_advanced_search' => true,
+            'visible' => true
+        ]);
+        $attribute = $this->eavConfig->getAttribute(Product::ENTITY, 'plex_codebar');
+        $attribute->setData('attribute_set_id', $attributeSetId);
+        $attribute->setData('attribute_group_id', $attributeGroupId);
+        $this->attributeResource->save($attribute);
+
+        $eavSetup->addAttribute(Product::ENTITY, 'plex_codesbar', [
+            'type' => 'text',
+            'label' => 'Codigos de Barra Plex',
+            'input' => 'text',
+            'global' => \Magento\Eav\Model\Entity\Attribute\ScopedAttributeInterface::SCOPE_GLOBAL,
+            'required' => false,
+            'is_filterable_in_grid' => true,
+            'is_used_in_grid' => true,
+            'is_visible_in_grid' => true,
+            'searchable' => true,
+            'system' => true,
+            'use_for_promo_rules' => true,
+            'visible_in_advanced_search' => true,
+            'visible' => true
+        ]);
+        $attribute = $this->eavConfig->getAttribute(Product::ENTITY, 'plex_codesbar');
+        $attribute->setData('attribute_set_id', $attributeSetId);
+        $attribute->setData('attribute_group_id', $attributeGroupId);
+        $this->attributeResource->save($attribute);
+    }*/
 }

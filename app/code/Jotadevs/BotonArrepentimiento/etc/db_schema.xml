@@ -5,7 +5,7 @@
         <column name="id" xsi:type="int" padding="12" nullable="false" identity="true" unsigned="false"/>
         <column name="nombre" xsi:type="varchar" length="15" nullable="false"  />
         <column name="apellido" xsi:type="varchar" length="15" nullable="false"  />
-        <column name="email" xsi:type="varchar" length="15" nullable="false"  />
+        <column name="email" xsi:type="varchar" length="100" nullable="false"  />
         <column name="motivo" xsi:type="text"  nullable="false"  />
         <column name="ciudad" xsi:type="varchar" length="15" nullable="false"  />
         <column name="provincia" xsi:type="varchar" length="15" nullable="false"  />

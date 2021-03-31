@@ -60,7 +60,7 @@ class InstallData implements InstallDataInterface
               'visible_in_advanced_search' => true,
               'visible_on_front' => true,
               'visible' => true
-          ]
+            ]
         );
         $dniAttribute = $this->eavConfig->getAttribute(Customer::ENTITY, 'dni');
         $dniAttribute->setData(

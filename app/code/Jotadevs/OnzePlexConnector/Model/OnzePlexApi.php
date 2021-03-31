@@ -304,6 +304,8 @@ class OnzePlexApi
                                 ($key == 'idrubro') ? $op_product->setIdrubro($value) : null;
                                 ($key == 'idSubro') ? $op_product->setIdrubro($value) : null;
                                 ($key == 'stock') ? $op_product->setStock($value) : null;
+                                ($key  == 'codebar') ? $op_product->setCodebar($value) : null;
+                                ($key  == 'codebars') ? $op_product->setCodesbar($value) : null;
                                 ($key == 'idlaboratorio') ? $op_product->setIdLaboratorio($value) : null;
                                 if ($key == 'grupos') {
                                     foreach ($value as $gr) {
@@ -436,7 +438,9 @@ class OnzePlexApi
                     ->setCustomAttribute('laboratorio', $plex_laboratorio->getName())
                     ->setCustomAttribute('rubro_plex', $new_op_product->getRubro())
                     ->setCustomAttribute('subrubro_plex', $new_op_product->getSubrubro())
-                    ->setCustomAttribute('grupo_plex', $new_op_product->getGrupo());
+                    ->setCustomAttribute('grupo_plex', $new_op_product->getGrupo())
+                    ->setCustomAttribute('plex_codebar', $new_op_product->getCodebar())
+                    ->setCustomAttribute('plex_codesbar', $new_op_product->getCodesbar());
                 try {
                     $mag_product = $this->productRepository->save($mag_product);
                 } catch (CouldNotSaveException $e) {
@@ -1224,6 +1228,8 @@ class OnzePlexApi
                 ($key == 'subrubro') ? $op_product->setSubrubro($value) : null;
                 ($key == 'idrubro') ? $op_product->setIdrubro($value) : null;
                 ($key == 'idSubro') ? $op_product->setIdrubro($value) : null;
+                ($key  == 'codebar') ? $op_product->setCodebar($value) : null;
+                ($key  == 'codebars') ? $op_product->setCodesbar($value) : null;
                 ($key == 'idlaboratorio') ? $op_product->setIdLaboratorio($value) : null;
                 if ($key == 'grupos') {
                     foreach ($value as $gr) {
@@ -1358,7 +1364,9 @@ class OnzePlexApi
                     ->setRubroPlex($op_product->getRubro())
                     ->setSubrubroPlex($op_product->getSubrubro())
                     ->setGrupoPlex($op_product->getGrupo())
-                    ->setObservacionesPlex("Producto actualizado el: " . date('Y-m-d H:i:s'));
+                    ->setObservacionesPlex("Producto actualizado el: " . date('Y-m-d H:i:s'))
+                    ->setPlexCodebar($op_product->getCodebar())
+                    ->setPlexCodesbar($op_product->getCodesbar());
                 $this->productResource
                     ->saveAttribute($mag_product, 'price')
                     ->saveAttribute($mag_product, 'laboratorio')
@@ -1366,7 +1374,9 @@ class OnzePlexApi
                     ->saveAttribute($mag_product, 'subrubro_plex')
                     ->saveAttribute($mag_product, 'grupo_plex')
                     ->saveAttribute($mag_product, 'status')
-                    ->saveAttribute($mag_product, 'observaciones_plex');
+                    ->saveAttribute($mag_product, 'observaciones_plex')
+                    ->saveAttribute($mag_product, 'plex_codebar')
+                    ->saveAttribute($mag_product, 'plex_codesbar');
 
                 //$this->productRepository->save($mag_product);
             }
@@ -1395,7 +1405,7 @@ class OnzePlexApi
     {
         $products_to_update = $this->plexproduct->create()->getCollection()
            // ->addFieldToFilter('is_synchronized', ['eq' => true])
-        ;
+         ;
         return [
             //'query' => $products_to_update->getSelectSql(),
             'cantidad' => count($products_to_update->getAllIds())
