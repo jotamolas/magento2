@@ -12,6 +12,8 @@ use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\ResourceModel\Product as ProductResource;
 use Magento\CatalogInventory\Api\StockRegistryInterface;
 use Magento\Customer\Api\CustomerRepositoryInterface;
+use Magento\Framework\Api\FilterBuilder;
+use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Framework\Exception\InputException;
 use Magento\Framework\Exception\LocalizedException;
@@ -22,6 +24,7 @@ use Magento\Framework\Stdlib\DateTime\TimezoneInterface;
 use Magento\Framework\Validation\ValidationException;
 use Magento\InventoryApi\Api\Data\SourceItemInterfaceFactory;
 use Magento\InventoryApi\Api\SourceItemsSaveInterface;
+use Magento\InventoryApi\Api\SourceRepositoryInterface;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory;
@@ -77,6 +80,21 @@ class OnzePlexApi
     protected $categoryLinkManagement;
     private $timezone;
 
+    /**
+     * @var SearchCriteriaBuilder
+     */
+    private $searchCriteriaBuilder;
+
+    /**
+     * @var SourceRepositoryInterface
+     */
+    private $sourceRepository;
+
+    /**
+     * @var FilterBuilder
+     */
+    private $filterBuilder;
+
     public function __construct(
         PlexOperationFactory $plexoperation,
         PlexProductFactory $plexproduct,
@@ -99,7 +117,10 @@ class OnzePlexApi
         SourceItemsSaveInterface $sourceItemsSave,
         SourceItemInterfaceFactory $sourceItemFactory,
         LoggerInterface $logger,
-        TimezoneInterface $timezone
+        TimezoneInterface $timezone,
+        SearchCriteriaBuilder $searchCriteriaBuilder,
+        SourceRepositoryInterface $sourceRepository,
+        FilterBuilder $filterBuilder
     ) {
         $this->zendClient = $zendClient;
         $this->json = $json;
@@ -123,6 +144,9 @@ class OnzePlexApi
         $this->sourceItemFactory = $sourceItemFactory;
         $this->sourceItemsSave = $sourceItemsSave;
         $this->timezone = $timezone;
+        $this->searchCriteriaBuilder = $searchCriteriaBuilder;
+        $this->sourceRepository = $sourceRepository;
+        $this->filterBuilder = $filterBuilder;
     }
 
     public function getProductsOnexPlex(\DateTime $fechadecambio = null, array $ids = null)
@@ -940,19 +964,28 @@ class OnzePlexApi
     {
         $sourceItems = [];
         foreach ($productos as $producto) {
-            $sourceItem = $this->sourceItemFactory->create();
-            //TODO se usa red_cba_cerro lear
-
-            $sourceItem->setSourceCode('red_cba_cerro');
-            $sourceItem->setSku($producto['codproducto']);
-            if ($producto['cantidad'] > 0) {
-                $sourceItem->setQuantity($producto['cantidad']);
-                $sourceItem->setStatus(1);
-            } else {
-                $sourceItem->setQuantity(0);
-                $sourceItem->setStatus(0);
+            //Cambio---Agrego todos los source al producto
+            $enabled_sources = $this->getSources();
+            foreach ($enabled_sources as $source_code) {
+                $sourceItem = $this->sourceItemFactory->create();
+                //TODO En v3 del proyecto mapear sucursales con source
+                $sourceItem->setSourceCode($source_code);
+                $sourceItem->setSku($producto['codproducto']);
+                //Aqui seteo por defecto el stock al source cerro
+                if ($source_code == 'red_cba_cerro') {
+                    if ($producto['cantidad'] > 0) {
+                        $sourceItem->setQuantity($producto['cantidad']);
+                        $sourceItem->setStatus(1);
+                    } else {
+                        $sourceItem->setQuantity(0);
+                        $sourceItem->setStatus(0);
+                    }
+                } else {
+                    $sourceItem->setQuantity(0);
+                    $sourceItem->setStatus(0);
+                }
+                $sourceItems[] = $sourceItem;
             }
-            $sourceItems[] = $sourceItem;
         }
         try {
             $this->sourceItemsSave->execute($sourceItems);
@@ -1405,11 +1438,33 @@ class OnzePlexApi
     {
         $products_to_update = $this->plexproduct->create()->getCollection()
            // ->addFieldToFilter('is_synchronized', ['eq' => true])
-         ;
+;
         return [
             //'query' => $products_to_update->getSelectSql(),
             'cantidad' => count($products_to_update->getAllIds())
 
         ];
+    }
+
+    public function getSources()
+    {
+        $filter[] = $this->filterBuilder
+            ->setField('enabled')
+            ->setValue('1')
+            ->create();
+        $searchCriteria = $this->searchCriteriaBuilder->addFilters($filter);
+        $sources_codes = [];
+        try {
+            $sourceData = $this->sourceRepository->getList($searchCriteria->create());
+            if ($sourceData->getTotalCount()) {
+                foreach ($sourceData->getItems() as $source) {
+                    $sources_codes[]= $source->getSourceCode();
+                }
+                return $sources_codes;
+            }
+        } catch (Exception $exception) {
+            $this->logger->error($exception->getMessage());
+        }
+        return null;
     }
 }

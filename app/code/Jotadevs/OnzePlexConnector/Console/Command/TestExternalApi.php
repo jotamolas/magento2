@@ -50,7 +50,7 @@ class TestExternalApi extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): void
     {
-        $this->state->setAreaCode(\Magento\Framework\App\Area::AREA_GLOBAL);
+        //$this->state->setAreaCode(\Magento\Framework\App\Area::AREA_GLOBAL);
         //$response = $this->externalApi->addCategoryToProduct();
         //$response = $this->externalApi->updateProductsFromPlex();
         //$oder_mag = $this->order_repository_magento->get(5);
@@ -63,7 +63,7 @@ class TestExternalApi extends Command
         }*/
         //$response = $this->externalApi->addCategoryToProduct();
         //$response = $this->externalApi->getSucursalesPlex();
-        $response = $this->externalApi->informPaymentToPlex();
+        //$response = $this->externalApi->informPaymentToPlex();
         //var_dump($this->externalApi->getMediosPago());
         //$products_plex_stock = $this->externalApi->getStockFromPlex([1007900505]);
         //$products_plex_updated = $this->externalApi->processStockFromPlex($products_plex_stock);
@@ -72,6 +72,7 @@ class TestExternalApi extends Command
         // $response = $this->externalApi->evaluatePriceVariation('403.11','383.92');
         //var_dump($response_prepared);
          //var_dump($response_order_to_sync);
-        var_dump($response);
+        //var_dump($response);
+        var_dump($this->externalApi->addSourcetoProduct());
     }
 }

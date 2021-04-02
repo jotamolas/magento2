@@ -2,42 +2,19 @@
 
 namespace Jotadevs\BotonArrepentimiento\Controller\Adminhtml\Caso;
 
-use Jotadevs\BotonArrepentimiento\Model\CasoFactory;
-use Magento\Backend\App\Action;
-use Magento\Backend\App\Action\Context;
+use Jotadevs\BotonArrepentimiento\Controller\Adminhtml\Caso;
 use Magento\Framework\Controller\ResultFactory;
 use Magento\Framework\Exception\NoSuchEntityException;
-use Magento\Framework\Message\ManagerInterface as MessageManagerInterface;
 
-class Edit extends Action
+class Edit extends Caso
 {
-    /**
-     * @var CasoFactory
-     */
-    protected $caso;
-
-    /**
-     * @var MessageManagerInterface
-     */
-    protected $messageManager;
-
-    public function __construct(
-        Context $context,
-        CasoFactory $caso,
-        MessageManagerInterface $messageManager
-    ) {
-        $this->caso = $caso;
-        $this->messageManager = $messageManager;
-        parent::__construct($context);
-    }
-
     public function execute()
     {
         $casoId = $this->getRequest()->getParam('id');
         if ((bool)$casoId) {
             try {
                 $caso = $this->caso->create()->load($casoId, 'id');
-                $people_name = $caso->getNombre()." ".$caso->getApellido();
+                $people_name = $caso->getNombre() . " " . $caso->getApellido();
             } catch (NoSuchEntityException $e) {
                 $this->messageManager->addException($e, __('Algo salio mal mientras editabamos este Caso'));
                 $resultRedirect = $this->resultRedirectFactory->create();
