@@ -706,7 +706,7 @@ class OnzePlexApi
                    ->setIdPlex($response_array['response']['content']['idpedido'])
                    ->setIsSynchronized(true);
                 $plex_order->save();
-                $mag_order->setStatus('sync_plex')->setState('procesing');
+                $mag_order->setStatus('plex_sync_without_payment')->setState('payment_review');
                 $this->_orderRepository->save($mag_order);
                 return [
                     'state' => 'success',
@@ -802,7 +802,7 @@ class OnzePlexApi
                         if ($rs['rta']['response']['respcode'] == '0') {
                             $plex_order->setIsPaymentInformed(true);
                             $plex_order->save();
-                            $mag_order->setStatus('sync_plex_completed')->setState('complete');
+                            $mag_order->setStatus('plex_sync_complete')->setState('complete');
                             $this->_orderRepository->save($mag_order);
                             $order_posted [] = [
                             'magento_id' => $mag_order->getId(),
@@ -889,7 +889,14 @@ class OnzePlexApi
                 $idstring .= $value . ',';
             }
         }
-        $parameters = array_merge($parameters, ['idproducto' => $idstring, 'idsucursal' => 2]);
+        $parameters = array_merge(
+            $parameters,
+            [
+                'idproducto' => $idstring,
+                //'idsucursal' => 2, removed to sum all stores stock
+                'StockQuantio' => 'S'
+            ]
+        );
         //harcordeada la surcursal 2 segun Galbo
         try {
             $this->zendClient->setConfig(
@@ -934,17 +941,25 @@ class OnzePlexApi
             $productos = [];
             foreach ($rs as $producto) {
                 $prod = [];
+                $plex_stock = 0; // variable para la suma de stock
                 $producto_plex = $this->plexproduct->create()->load($producto['codproducto'], 'codproduct');
                 $prod['id_magento'] = $producto_plex->getIdMagento();
                 foreach ($producto as $key => $value) {
-                    if ($key == 'stock') {
-                        foreach ($value as $stock) {
-                            $prod['cantidad'] = $stock['cantidad'];
-                            $producto_plex->setStock($stock['cantidad']);
-                        }
+                    if ($key == 'stock_sucursales') {
+                        $plex_stock += $value;
+                    } elseif ($key == 'stock_quantio') {
+                        $plex_stock += $value;
                     } else {
                         $prod[$key] = $value;
                     }
+                    $prod['cantidad'] = $plex_stock;
+                    $producto_plex->setStock($plex_stock);
+                    /*if ($key == 'stock') {
+                        foreach ($value as $stock) {
+                            $prod['cantidad'] = $stock['cantidad'];
+
+                        }
+                    }*/
                 }
                 $producto_plex->save();
                 $productos[] = $prod;
@@ -995,7 +1010,7 @@ class OnzePlexApi
         }
         return [
             'state' => 'success',
-            'qty_product_stock_update' => count($sourceItems)
+            'qty_product_stock_update' => count($productos)
         ];
     }
 
