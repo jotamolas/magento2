@@ -746,7 +746,7 @@ class OnzePlexApi
 
         $mag_orders_collection = $this->orderCollectionFactory->create()
             ->addAttributeToSelect("*")
-            ->addFieldToFilter('status', ['eq' => 'sync_plex']);
+            ->addFieldToFilter('status', ['eq' => 'plex_sync_without_payment']);
         $magento_order_id ?
             $mag_orders_collection->addFieldToFilter('entity_id', ['eq' => $magento_order_id]) :
             null;
