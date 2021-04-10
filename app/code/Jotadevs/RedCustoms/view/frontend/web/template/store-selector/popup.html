@@ -1,0 +1,9 @@
+<div id="store-selector-popup">
+    <table class="store-selector-popup-table" data-bind="blockLoader: isLoading, visible: nearbyLocations() && nearbyLocations().length">
+        <tbody>
+        <!-- ko foreach: { data: nearbyLocations(), as: 'location' } -->
+        <!-- ko template: { name: $parent.storeSelectorPopupItemTemplate } --><!-- /ko -->
+        <!-- /ko -->
+        </tbody>
+    </table>
+</div>
