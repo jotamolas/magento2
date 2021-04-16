@@ -71,7 +71,6 @@ define([
                 //console.log(searchQuery);
                 this.updateNearbyLocations(searchQuery);
             }, this.searchDebounceTimeout).bind(this);
-            console.log(updateNearbyLocations);
             this.searchQuery.subscribe(updateNearbyLocations);
 
             return this;

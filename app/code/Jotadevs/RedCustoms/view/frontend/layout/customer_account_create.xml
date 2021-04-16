@@ -4,11 +4,11 @@
         <referenceBlock name="catalog.topnav" remove="true"/>
         <referenceBlock name="customer_form_register">
             <action method="setShowAddressFields">
-                <argument name="show.address.fields" xsi:type="boolean">false</argument>
+                <argument name="show.address.fields" xsi:type="boolean">true</argument>
             </action>
-        <referenceContainer name="form.additional.info">
-            <block class="Magento\Framework\View\Element\Template" name="form_additional_info_customer" template="Jotadevs_RedCustoms::additional.phtml"/>
-        </referenceContainer>
+            <referenceContainer name="form.additional.info">
+                <block class="Magento\Framework\View\Element\Template" name="form_additional_info_customer" template="Jotadevs_RedCustoms::additional.phtml"/>
+            </referenceContainer>
         </referenceBlock>
     </body>
 </page>

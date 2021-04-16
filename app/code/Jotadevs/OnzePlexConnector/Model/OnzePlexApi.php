@@ -786,6 +786,7 @@ class OnzePlexApi
                         //'aditionalinfo' => $mag_order->getPayment()->getAdditionalInformation(),
                         //'additionaldata' =>$mag_order->getPayment()->getAdditionalData()
                     ];
+                    var_dump($mag_order->getPayment()->getAdditionalInformation());
                     $request = [
                         'idpedido' => $plex_order->getIdPlex(),
                         'pagos' => $pagos

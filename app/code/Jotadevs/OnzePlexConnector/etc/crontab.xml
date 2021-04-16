@@ -5,7 +5,7 @@
         <job name="jotadevs_op_stockUpdate"
              instance="Jotadevs\OnzePlexConnector\Cron\updateStock"
              method="updateStock">
-            <schedule>*/5 * * * *</schedule>
+            <schedule>*/10 * * * *</schedule>
         </job>
         <job
             name="jotadevs_op_importNewProducts"
