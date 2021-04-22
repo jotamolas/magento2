@@ -774,7 +774,7 @@ class OnzePlexApi
                     $pagos [] = [
                         'idmediodepago' => $this->plex_mercadopago,
                         'idtarjeta' => "",
-                        'importetotal' => $mag_order->getPayment()->getAdditionalInformation()['total_amount'],
+                        'importetotal' => $mag_order->getPayment()->getAdditionalInformation()['paymentResponse']['transaction_amount'],
                             //- $mag_order->getDiscountAmount()
                             //+ $mag_order->getShippingAmount(),
                         //'importedto' =>  $mag_order->getDiscountAmount(), //TODO CON MERCADO PAGO NO
