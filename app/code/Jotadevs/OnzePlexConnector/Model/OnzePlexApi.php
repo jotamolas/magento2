@@ -586,7 +586,7 @@ class OnzePlexApi
                         $line [] = [
                         'line_amount' => $item->getRowTotalInclTax(),
                         'line_unit_amount' => $item->getPriceInclTax(),
-                        'line_total_descuento' => 0,//$item->getDiscountAmount(), // TO VIEW SACO EL DTO PORQUE PLEX NO DEJA DESCUENTOS NATIVOS MAGENTO POR LINEA
+                        'line_total_descuento' => 0,//$item->getDiscountAmount(), //TODO SACO EL DTO PORQUE PLEX NO DEJA DESCUENTOS NATIVOS MAGENTO POR LINEA
                         'prod_qty' => $item->getQtyOrdered(),
                         'qty_ordered' => $item->getOrderId(),
                         'product_id' => $product->getId(),
@@ -600,9 +600,11 @@ class OnzePlexApi
                 ($magOrder->getShippingMethod() == 'instore_pickup')
                     ? $tipo_entrega = 'R'
                     : $tipo_entrega = 'E';
-                ($magOrder->getShippingMethod() == 'instore_pickup')
+                
+                $observacion = $magOrder->getShippingDescription();
+                /*($magOrder->getShippingMethod() == 'instore_pickup')
                     ? $observacion = $magOrder->getShippingDescription()
-                    : $observacion = null;
+                    : $observacion = null;*/
                 //TODO ver el id de sucursal
                 //var_dump($magOrder->getShippingMethod());
                 $rs_order = [

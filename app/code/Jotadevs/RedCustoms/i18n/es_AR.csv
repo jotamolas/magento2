@@ -1,4 +1,4 @@
 "The requested qty is not available","No contamos con la cantidad solicitada del producto seleccionado",module,Magento_CatalogInventory
-"The requested qty is not available","No contamos con la cantidad solicitada del producto seleccionado",module,Magento_CatalogInventory
 "The requested qty is not available","No contamos con la cantidad solicitada del producto seleccionado",module,Magento_RequisitionList
 "Pick in Store","Retiro en Tienda",module,Magento_InventoryInStorePickupFrontend
+"Select Other","Elegir Otra Tienda",module,Magento_InventoryInStorePickupFrontend

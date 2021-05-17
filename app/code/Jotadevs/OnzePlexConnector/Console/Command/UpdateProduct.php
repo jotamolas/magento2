@@ -42,7 +42,7 @@ class UpdateProduct extends Command
     protected function execute(InputInterface $input, OutputInterface $output): void
     {
         $this->state->setAreaCode(\Magento\Framework\App\Area::AREA_GLOBAL);
-        $response = $this->onzeplexapi->updateProductsOrchestor(true);
+        $response = $this->onzeplexapi->updateProductsOrchestor(false);
         var_dump($response);
     }
 }
