@@ -309,6 +309,7 @@ return [
         'Mugar_ArgentinaRegions' => 1,
         'PayPal_Braintree' => 0,
         'PayPal_BraintreeGraphQl' => 1,
+        'Sparsh_ProductLabel' => 1,
         'Sparsh_WhatsAppChat' => 1,
         'Temando_ShippingRemover' => 1,
         'Vertex_Tax' => 0,
