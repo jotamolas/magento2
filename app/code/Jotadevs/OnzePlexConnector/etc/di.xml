@@ -28,6 +28,9 @@
                 <item name="jotadevs_onzeplexconnector_update_product" xsi:type="object">
                     Jotadevs\OnzePlexConnector\Console\Command\UpdateProduct
                 </item>
+                <item name="jotadevs_onzeplexconnector_update_oneproduct" xsi:type="object">
+                    Jotadevs\OnzePlexConnector\Console\Command\UpdateOneProduct
+                </item>
             </argument>
         </arguments>
     </type>

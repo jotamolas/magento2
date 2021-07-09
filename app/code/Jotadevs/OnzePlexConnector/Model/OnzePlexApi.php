@@ -1404,8 +1404,6 @@ class OnzePlexApi
         if ($op_products['type'] == 'products_to_update') {
             foreach ($op_products['products'] as $op_product) {
                 $mag_product = $this->productRepository->get($op_product->getSku());
-                $mag_product->getSku() == '3003947764' ?
-                    $this->logger->debug("Actualizando el producto 3003947764") : null;
                 $plex_laboratorio = $this->plexlaboratorio->create()
                     ->load($op_product->getIdLaboratorio(), 'id_plex');
                 $mag_product
@@ -1450,6 +1448,28 @@ class OnzePlexApi
             }
         }
         return count($op_products);
+    }
+
+    public function updateOneProductFromMiddleware($sku){        
+        if ($sku){
+            $middleware_product = 
+                $this->plexproduct->create()->load($sku, 'codproduct');
+            if($middleware_product->getId()){
+                //lo actualizo solo
+                $rs = $this->updateMagentoProduct(
+                    [
+                        'type' => 'products_to_update',
+                        'products' => [$middleware_product]
+                    ]
+                    );
+                var_dump($rs);
+                return "Completo";
+            }else{
+                return "Error al consultar el codigo";
+            }
+        }else{
+            return "No ingresaste el SKU";
+        }
     }
 
     public function getAllOpProducts()
