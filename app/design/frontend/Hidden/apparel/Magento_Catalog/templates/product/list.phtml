@@ -23,6 +23,7 @@ $jotaHelper = $this->helper('Hidden\Apparel\Helper\Stock');
 $showNewLabel = $apparelHelper->getConfigValue('apparelsettings/category_settings/show_new_label');
 $showSaleLabel = $apparelHelper->getConfigValue('apparelsettings/category_settings/show_sale_label');
 $showBorder = $apparelHelper->getConfigValue('apparelsettings/category_settings/show_border');
+$productLabelHelper = $this->helper('Sparsh\ProductLabel\Helper\ProductLabelHelper');
 ?>
 <?php if (!$_productCollection->count()): ?>
     <div class="message info empty"><div><?php /* @escapeNotVerified */ echo __('We can\'t find products matching the selection.') ?></div></div>
@@ -60,12 +61,40 @@ $showBorder = $apparelHelper->getConfigValue('apparelsettings/category_settings/
                                 . 'top:' . $productImage->getHeight() . 'px;"';
                     }
                     ?>
-                    <?php // Product Image ?>
+                    <?php // Product Image?>
                     <?php if ($viewMode == 'grid') { ?>
                         <div class="product-img-main">
                         <?php } ?>
                         <a href="<?php /* @escapeNotVerified */ echo $_product->getProductUrl() ?>" class="product photo product-item-photo <?php if ($showBorder == 1) { ?> add-border <?php } ?>" tabindex="-1">
                             <?php echo $productImage->toHtml(); ?>
+                            <?php
+                            if ($viewMode == 'grid') {
+                                $productLabelType = $productLabelHelper->getProductLabelType($_product);
+                                if (!empty($productLabelType)) {
+                                    if ($productLabelType == 'text') {
+                                        $productLabel = $productLabelHelper->getProductLabel($_product);
+                                        $productLabelColor = $productLabelHelper->getProductLabelColor($_product);
+                                        $productLabelBackgroundColor = $productLabelHelper->getProductLabelBackgroundColor($_product);
+                                        $productLabelShape = $productLabelHelper->getProductLabelShape($_product);
+                                        if ($productLabel && $productLabelShape) { ?>
+                                        <span class="sparsh-product-label"
+                                                        <?php echo !empty($productLabelColor) ? 'data-color=' .
+                                                            $productLabelColor : ''; ?> <?php echo !empty($productLabelBackgroundColor) ?
+                                            'data-background-color=' . $productLabelBackgroundColor : ''; ?> <?php echo !empty($productLabelShape) ? 'data-shape=' . $productLabelShape : '' ?>>
+                                                        <?php echo $block->escapeHtml($productLabel); ?>
+                                                    </span>
+                                    <?php }
+                                    } elseif ($productLabelType == 'image') {
+                                        $productLabelImage = $productLabelHelper->getProductLabelImage($_product);
+                                        if ($productLabelImage) { ?>
+                                        <div class=" sparsh-product-label-image">
+                                            <img src="<?php echo $productLabelHelper->getProductMediaUrl() . $productLabelImage; ?>">
+                                        </div>
+                                    <?php }
+                                    }
+                                }
+                            }
+                            ?>
                             <?php
                             if ($showNewLabel == 1) {
                                 $fromDate = $_product->getNewsFromDate();
@@ -260,3 +289,12 @@ $showBorder = $apparelHelper->getConfigValue('apparelsettings/category_settings/
         </script>
     <?php endif; ?>
 <?php endif; ?>
+<?php if ($viewMode == 'grid') { ?>
+<script type="text/x-magento-init">
+                        {
+                             "*": {
+                                "Sparsh_ProductLabel/js/label-shape": {}
+                              }
+                        }
+                    </script>
+<?php } ?>
