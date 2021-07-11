@@ -600,7 +600,7 @@ class OnzePlexApi
                 ($magOrder->getShippingMethod() == 'instore_pickup')
                     ? $tipo_entrega = 'R'
                     : $tipo_entrega = 'E';
-                
+
                 $observacion = $magOrder->getShippingDescription();
                 /*($magOrder->getShippingMethod() == 'instore_pickup')
                     ? $observacion = $magOrder->getShippingDescription()
@@ -1448,28 +1448,6 @@ class OnzePlexApi
             }
         }
         return count($op_products);
-    }
-
-    public function updateOneProductFromMiddleware($sku){        
-        if ($sku){
-            $middleware_product = 
-                $this->plexproduct->create()->load($sku, 'codproduct');
-            if($middleware_product->getId()){
-                //lo actualizo solo
-                $rs = $this->updateMagentoProduct(
-                    [
-                        'type' => 'products_to_update',
-                        'products' => [$middleware_product]
-                    ]
-                    );
-                var_dump($rs);
-                return "Completo";
-            }else{
-                return "Error al consultar el codigo";
-            }
-        }else{
-            return "No ingresaste el SKU";
-        }
     }
 
     public function getAllOpProducts()

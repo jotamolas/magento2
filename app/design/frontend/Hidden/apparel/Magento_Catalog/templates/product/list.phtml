@@ -92,7 +92,15 @@ $productLabelHelper = $this->helper('Sparsh\ProductLabel\Helper\ProductLabelHelp
                                         </div>
                                     <?php }
                                     }
-                                }
+                                } ?>
+                                <script type="text/x-magento-init">
+                                    {
+                                    "*": {
+                                        "Sparsh_ProductLabel/js/label-shape": {}
+                                    }
+                                    }
+                                </script>
+                            <?php
                             }
                             ?>
                             <?php
@@ -228,7 +236,7 @@ $productLabelHelper = $this->helper('Sparsh\ProductLabel\Helper\ProductLabelHelp
                                                     <span><?php /* @escapeNotVerified */ echo __('Add to Cart') ?></span>
                                                 </button>
                                             </form>
-                                        <?php var_dump($jotaHelper->getStockQty($_product->getId())); ?>
+                                        <!--?php var_dump($jotaHelper->getStockQty($_product->getId())); ?-->
                                         <?php else: ?>
                                             <?php if ($_product->getIsSalable()): ?>
                                                 <div class="stock available"><span><?php /* @escapeNotVerified */ echo __('In stock') ?></span></div>
@@ -289,12 +297,3 @@ $productLabelHelper = $this->helper('Sparsh\ProductLabel\Helper\ProductLabelHelp
         </script>
     <?php endif; ?>
 <?php endif; ?>
-<?php if ($viewMode == 'grid') { ?>
-<script type="text/x-magento-init">
-                        {
-                             "*": {
-                                "Sparsh_ProductLabel/js/label-shape": {}
-                              }
-                        }
-                    </script>
-<?php } ?>
